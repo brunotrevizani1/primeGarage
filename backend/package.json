@@ -1,0 +1,31 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon src/server.js",
+    "start": "node src/server.js",
+    "create-tables": "node src/database/createTables.js",
+    "create-permissions": "node src/database/createPermissions.js",
+    "create-admin": "node src/database/createSuperAdmin.js",
+    "create-service-tables": "node src/database/createServiceTables.js",
+    "grant-permission": "node src/database/grantPermission.js",
+    "create-operational-tables": "node src/database/createOperationalTables.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "mysql2": "^3.22.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}
