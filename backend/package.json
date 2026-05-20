@@ -11,7 +11,8 @@
     "create-admin": "node src/database/createSuperAdmin.js",
     "create-service-tables": "node src/database/createServiceTables.js",
     "grant-permission": "node src/database/grantPermission.js",
-    "create-operational-tables": "node src/database/createOperationalTables.js"
+    "create-operational-tables": "node src/database/createOperationalTables.js",
+    "create-finance-tables": "node src/database/createFinanceTables.js"
   },
   "keywords": [],
   "author": "",

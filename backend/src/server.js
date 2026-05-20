@@ -11,6 +11,7 @@ const adminRoutes = require("./routes/adminRoutes");
 const businessRoutes = require("./routes/businessRoutes");
 const serviceRoutes = require("./routes/serviceRoutes");
 const orderRoutes = require("./routes/orderRoutes");
+const financeRoutes = require("./routes/financeRoutes");
 
 const app = express();
 
@@ -23,6 +24,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/business", businessRoutes);
 app.use("/api/services", serviceRoutes);
 app.use("/api/orders", orderRoutes);
+app.use("/api/finance", financeRoutes);
 
 app.get("/", (req, res) => {
   res.send("API PrimeGarage funcionando!");
