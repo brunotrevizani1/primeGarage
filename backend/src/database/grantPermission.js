@@ -3,7 +3,7 @@ const db = require("./connection");
 async function grantPermission() {
   try {
     const userEmail = "dono@teste.com";
-    const permissionCode = "ver_financeiro";
+    const permissionCode = "editar_atendimento";
 
     const [users] = await db.query("SELECT id FROM users WHERE email = ?", [
       userEmail,

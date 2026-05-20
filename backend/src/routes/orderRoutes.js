@@ -3,6 +3,8 @@ const {
   createOrder,
   listTodayQueue,
   updateOrderStatus,
+  updateOrder,
+  getOrderById,
 } = require("../controllers/orderController");
 
 const authMiddleware = require("../middlewares/authMiddleware");
@@ -24,11 +26,25 @@ router.get(
   listTodayQueue,
 );
 
+router.get(
+  "/:id",
+  authMiddleware,
+  permissionMiddleware("editar_atendimento"),
+  getOrderById,
+);
+
 router.patch(
   "/:id/status",
   authMiddleware,
   permissionMiddleware("alterar_status"),
   updateOrderStatus,
+);
+
+router.put(
+  "/:id",
+  authMiddleware,
+  permissionMiddleware("editar_atendimento"),
+  updateOrder,
 );
 
 module.exports = router;
