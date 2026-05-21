@@ -3,7 +3,15 @@ const db = require("../database/connection");
 async function createService(req, res) {
   try {
     const businessId = req.user.business_id;
-    const { name, description, price, duration_minutes, image_url } = req.body;
+
+    const {
+      category_id,
+      name,
+      description,
+      price,
+      duration_minutes,
+      image_url,
+    } = req.body;
 
     if (!businessId) {
       return res.status(400).json({
@@ -11,21 +19,37 @@ async function createService(req, res) {
       });
     }
 
-    if (!name || !price) {
+    if (!category_id || !name || !price) {
       return res.status(400).json({
-        mensagem: "Nome e preço são obrigatórios.",
+        mensagem: "Categoria, nome e preço são obrigatórios.",
+      });
+    }
+
+    const [categories] = await db.query(
+      `
+      SELECT id
+      FROM service_categories
+      WHERE id = ? AND business_id = ? AND status = 'active'
+      `,
+      [category_id, businessId],
+    );
+
+    if (categories.length === 0) {
+      return res.status(404).json({
+        mensagem: "Categoria não encontrada ou inativa.",
       });
     }
 
     const [result] = await db.query(
       `
       INSERT INTO services 
-      (business_id, name, description, price, duration_minutes, image_url, status)
-      VALUES (?, ?, ?, ?, ?, ?, 'active')
+      (business_id, category_id, name, description, price, duration_minutes, image_url, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'active')
       `,
       [
         businessId,
-        name,
+        category_id,
+        name.trim(),
         description || null,
         price,
         duration_minutes || null,
@@ -55,10 +79,22 @@ async function listServices(req, res) {
 
     const [services] = await db.query(
       `
-      SELECT id, name, description, price, duration_minutes, image_url, status, created_at
-      FROM services
-      WHERE business_id = ?
-      ORDER BY created_at DESC
+      SELECT 
+        s.id,
+        s.business_id,
+        s.category_id,
+        sc.name AS category_name,
+        s.name,
+        s.description,
+        s.price,
+        s.duration_minutes,
+        s.image_url,
+        s.status,
+        s.created_at
+      FROM services s
+      LEFT JOIN service_categories sc ON s.category_id = sc.id
+      WHERE s.business_id = ?
+      ORDER BY s.created_at DESC
       `,
       [businessId],
     );
@@ -79,17 +115,54 @@ async function updateService(req, res) {
   try {
     const businessId = req.user.business_id;
     const { id } = req.params;
-    const { name, description, price, duration_minutes, image_url, status } =
-      req.body;
 
-    await db.query(
+    const {
+      category_id,
+      name,
+      description,
+      price,
+      duration_minutes,
+      image_url,
+      status,
+    } = req.body;
+
+    if (!category_id || !name || !price) {
+      return res.status(400).json({
+        mensagem: "Categoria, nome e preço são obrigatórios.",
+      });
+    }
+
+    const [categories] = await db.query(
+      `
+      SELECT id
+      FROM service_categories
+      WHERE id = ? AND business_id = ?
+      `,
+      [category_id, businessId],
+    );
+
+    if (categories.length === 0) {
+      return res.status(404).json({
+        mensagem: "Categoria não encontrada.",
+      });
+    }
+
+    const [result] = await db.query(
       `
       UPDATE services
-      SET name = ?, description = ?, price = ?, duration_minutes = ?, image_url = ?, status = ?
+      SET 
+        category_id = ?,
+        name = ?,
+        description = ?,
+        price = ?,
+        duration_minutes = ?,
+        image_url = ?,
+        status = ?
       WHERE id = ? AND business_id = ?
       `,
       [
-        name,
+        category_id,
+        name.trim(),
         description || null,
         price,
         duration_minutes || null,
@@ -99,6 +172,12 @@ async function updateService(req, res) {
         businessId,
       ],
     );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        mensagem: "Serviço não encontrado.",
+      });
+    }
 
     res.json({
       mensagem: "Serviço atualizado com sucesso.",
@@ -116,7 +195,7 @@ async function disableService(req, res) {
     const businessId = req.user.business_id;
     const { id } = req.params;
 
-    await db.query(
+    const [result] = await db.query(
       `
       UPDATE services
       SET status = 'inactive'
@@ -124,6 +203,12 @@ async function disableService(req, res) {
       `,
       [id, businessId],
     );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        mensagem: "Serviço não encontrado.",
+      });
+    }
 
     res.json({
       mensagem: "Serviço desativado com sucesso.",

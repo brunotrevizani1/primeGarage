@@ -476,10 +476,86 @@ async function getOrderById(req, res) {
   }
 }
 
+async function listOrders(req, res) {
+  try {
+    const businessId = req.user.business_id;
+
+    const { startDate, endDate, status, plate, customer } = req.query;
+
+    if (!businessId) {
+      return res.status(400).json({
+        mensagem: "Usuário não está vinculado a nenhum lavajato.",
+      });
+    }
+
+    const filters = ["so.business_id = ?"];
+    const values = [businessId];
+
+    if (startDate && endDate) {
+      filters.push("DATE(so.entry_time) BETWEEN ? AND ?");
+      values.push(startDate, endDate);
+    } else {
+      filters.push("DATE(so.entry_time) = CURDATE()");
+    }
+
+    if (status && status !== "todos") {
+      filters.push("so.status = ?");
+      values.push(status);
+    }
+
+    if (plate) {
+      filters.push("v.plate LIKE ?");
+      values.push(`%${plate.toUpperCase()}%`);
+    }
+
+    if (customer) {
+      filters.push("c.name LIKE ?");
+      values.push(`%${customer}%`);
+    }
+
+    const [orders] = await db.query(
+      `
+      SELECT 
+        so.id,
+        so.status,
+        so.price,
+        so.notes,
+        so.entry_time,
+        c.name AS customer_name,
+        c.phone AS customer_phone,
+        v.plate AS vehicle_plate,
+        v.model AS vehicle_model,
+        v.color AS vehicle_color,
+        s.name AS service_name,
+        u.name AS responsible_name
+      FROM service_orders so
+      INNER JOIN customers c ON so.customer_id = c.id
+      INNER JOIN vehicles v ON so.vehicle_id = v.id
+      INNER JOIN services s ON so.service_id = s.id
+      LEFT JOIN users u ON so.responsible_user_id = u.id
+      WHERE ${filters.join(" AND ")}
+      ORDER BY so.entry_time DESC
+      `,
+      values,
+    );
+
+    res.json({
+      mensagem: "Atendimentos listados com sucesso.",
+      orders,
+    });
+  } catch (error) {
+    res.status(500).json({
+      mensagem: "Erro ao listar atendimentos.",
+      erro: error.message,
+    });
+  }
+}
+
 module.exports = {
   createOrder,
   listTodayQueue,
   updateOrderStatus,
   updateOrder,
   getOrderById,
+  listOrders,
 };

@@ -5,6 +5,7 @@ const {
   updateOrderStatus,
   updateOrder,
   getOrderById,
+  listOrders,
 } = require("../controllers/orderController");
 
 const authMiddleware = require("../middlewares/authMiddleware");
@@ -32,6 +33,8 @@ router.get(
   permissionMiddleware("editar_atendimento"),
   getOrderById,
 );
+
+router.get("/", authMiddleware, permissionMiddleware("ver_fila"), listOrders);
 
 router.patch(
   "/:id/status",

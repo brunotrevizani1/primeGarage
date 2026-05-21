@@ -3,6 +3,7 @@ import Dashboard from "./pages/dashboard/dashboard";
 import Atendimentos from "./pages/atendimentos/atendimentos";
 import NovoAtendimento from "./pages/novo-atendimento/novoAtendimento";
 import EditarAtendimento from "./pages/editar-atendimento/editarAtendimento";
+import Servicos from "./pages/servicos/servicos";
 
 function App() {
   const path = window.location.pathname;
@@ -42,6 +43,15 @@ function App() {
     }
 
     return <EditarAtendimento />;
+  }
+
+  if (path === "/servicos") {
+    if (!token) {
+      window.location.href = "/";
+      return null;
+    }
+
+    return <Servicos />;
   }
 
   return <Login />;
