@@ -94,6 +94,7 @@ async function listServices(req, res) {
       FROM services s
       LEFT JOIN service_categories sc ON s.category_id = sc.id
       WHERE s.business_id = ?
+      AND s.status = 'active'
       ORDER BY s.created_at DESC
       `,
       [businessId],

@@ -15,6 +15,7 @@ async function listCategories(req, res) {
       SELECT id, name, status, created_at
       FROM service_categories
       WHERE business_id = ?
+      AND status = 'active'
       ORDER BY name ASC
       `,
       [businessId],
@@ -104,8 +105,71 @@ async function updateCategory(req, res) {
   }
 }
 
+async function disableCategory(req, res) {
+  const connection = await db.getConnection();
+
+  try {
+    const businessId = req.user.business_id;
+    const { id } = req.params;
+
+    await connection.beginTransaction();
+
+    const [categories] = await connection.query(
+      `
+      SELECT id
+      FROM service_categories
+      WHERE id = ? AND business_id = ?
+      LIMIT 1
+      `,
+      [id, businessId],
+    );
+
+    if (categories.length === 0) {
+      await connection.rollback();
+
+      return res.status(404).json({
+        mensagem: "Categoria não encontrada.",
+      });
+    }
+
+    await connection.query(
+      `
+      UPDATE service_categories
+      SET status = 'inactive'
+      WHERE id = ? AND business_id = ?
+      `,
+      [id, businessId],
+    );
+
+    await connection.query(
+      `
+      UPDATE services
+      SET status = 'inactive'
+      WHERE category_id = ? AND business_id = ?
+      `,
+      [id, businessId],
+    );
+
+    await connection.commit();
+
+    res.json({
+      mensagem: "Categoria excluída com sucesso.",
+    });
+  } catch (error) {
+    await connection.rollback();
+
+    res.status(500).json({
+      mensagem: "Erro ao excluir categoria.",
+      erro: error.message,
+    });
+  } finally {
+    connection.release();
+  }
+}
+
 module.exports = {
   listCategories,
   createCategory,
   updateCategory,
+  disableCategory,
 };

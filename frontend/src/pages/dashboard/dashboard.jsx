@@ -9,6 +9,7 @@ function Dashboard() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [servicesMenuOpen, setServicesMenuOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const [filters, setFilters] = useState({
     startDate: "",
@@ -192,13 +193,51 @@ function Dashboard() {
                 Atendimentos
               </button>
 
-              <button type="button">Equipe</button>
               <button
                 type="button"
-                onClick={() => (window.location.href = "/servicos")}
+                onClick={() => (window.location.href = "/equipe")}
               >
-                Serviços
+                Equipe
               </button>
+              <div className="menu-group">
+                <button
+                  type="button"
+                  className="menu-parent-button"
+                  onClick={() => setServicesMenuOpen(!servicesMenuOpen)}
+                >
+                  <span>Serviços</span>
+
+                  <svg
+                    className={
+                      servicesMenuOpen ? "submenu-arrow open" : "submenu-arrow"
+                    }
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <path d="M7.22 9.47a.75.75 0 0 1 1.06 0L12 13.19l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0l-4.25-4.25a.75.75 0 0 1 0-1.06Z" />
+                  </svg>
+                </button>
+
+                {servicesMenuOpen && (
+                  <div className="submenu-links">
+                    <button
+                      type="button"
+                      onClick={() => (window.location.href = "/servicos")}
+                    >
+                      Lista de serviços
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        (window.location.href = "/categorias-servicos")
+                      }
+                    >
+                      Categorias
+                    </button>
+                  </div>
+                )}
+              </div>
               <button type="button">Financeiro</button>
               <button type="button">Configurações</button>
             </nav>

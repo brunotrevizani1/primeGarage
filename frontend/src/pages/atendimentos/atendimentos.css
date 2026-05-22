@@ -156,8 +156,8 @@
 }
 
 .new-order-icon-button {
-  width: 46px;
-  height: 46px;
+  width: 40px;
+  height: 40px;
   min-width: 46px;
   border: none;
   border-radius: 17px;
@@ -837,4 +837,65 @@
   color: #14211d;
   font-size: 0.88rem;
   line-height: 1.4;
+}
+
+.menu-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.submenu-links {
+  margin-left: 12px;
+  padding-left: 10px;
+  border-left: 2px solid #dbe7df;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.submenu-links button {
+  height: 40px;
+  font-size: 0.86rem;
+}
+
+.menu-parent-button {
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.menu-parent-button span {
+  display: block;
+}
+
+.submenu-arrow {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+  transition: 0.2s ease;
+}
+
+.submenu-arrow.open {
+  transform: rotate(180deg);
+}
+
+.submenu-links {
+  margin-left: 12px;
+  padding-left: 10px;
+  border-left: 2px solid #dbe7df;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.submenu-links button {
+  height: 40px;
+  font-size: 0.86rem;
+}
+
+.submenu-links button.active {
+  background: #dbe7df;
+  color: #2f5249;
 }

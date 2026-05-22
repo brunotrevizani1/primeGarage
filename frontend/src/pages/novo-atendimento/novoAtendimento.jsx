@@ -3,8 +3,9 @@ import { apiRequest } from "../../services/api";
 import "./novoAtendimento.css";
 
 function NovoAtendimento() {
+  const [categories, setCategories] = useState([]);
   const [services, setServices] = useState([]);
-  const [loadingServices, setLoadingServices] = useState(true);
+  const [loadingOptions, setLoadingOptions] = useState(true);
   const [saving, setSaving] = useState(false);
   const [searchingPlate, setSearchingPlate] = useState(false);
   const [plateMessage, setPlateMessage] = useState("");
@@ -16,6 +17,7 @@ function NovoAtendimento() {
     vehiclePlate: "",
     vehicleModel: "",
     vehicleColor: "",
+    categoryId: "",
     serviceId: "",
     price: "",
     notes: "",
@@ -34,6 +36,31 @@ function NovoAtendimento() {
 
   function onlyNumbers(value) {
     return value.replace(/\D/g, "");
+  }
+
+  function formatCurrencyInput(value) {
+    const numbers = String(value).replace(/\D/g, "");
+
+    if (!numbers) {
+      return "";
+    }
+
+    const amount = Number(numbers) / 100;
+
+    return amount.toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    });
+  }
+
+  function currencyToNumber(value) {
+    const numbers = String(value).replace(/\D/g, "");
+
+    if (!numbers) {
+      return 0;
+    }
+
+    return Number(numbers) / 100;
   }
 
   function formatPhone(value) {
@@ -83,17 +110,20 @@ function NovoAtendimento() {
     updateField("vehicleColor", onlyLetters(value));
   }
 
-  async function loadServices() {
+  async function loadOptions() {
     try {
-      setLoadingServices(true);
+      setLoadingOptions(true);
       setError("");
 
-      const response = await apiRequest("/api/services");
-      setServices(response.services || []);
+      const categoriesResponse = await apiRequest("/api/service-categories");
+      const servicesResponse = await apiRequest("/api/services");
+
+      setCategories(categoriesResponse.categories || []);
+      setServices(servicesResponse.services || []);
     } catch (error) {
       setError(error.message);
     } finally {
-      setLoadingServices(false);
+      setLoadingOptions(false);
     }
   }
 
@@ -130,6 +160,15 @@ function NovoAtendimento() {
     }
   }
 
+  function handleCategoryChange(categoryId) {
+    setForm((currentForm) => ({
+      ...currentForm,
+      categoryId,
+      serviceId: "",
+      price: "",
+    }));
+  }
+
   function handleServiceChange(serviceId) {
     const selectedService = services.find(
       (service) => String(service.id) === String(serviceId),
@@ -138,7 +177,11 @@ function NovoAtendimento() {
     setForm((currentForm) => ({
       ...currentForm,
       serviceId,
-      price: selectedService ? selectedService.price : "",
+      price: selectedService
+        ? formatCurrencyInput(
+            String(Math.round(Number(selectedService.price || 0) * 100)),
+          )
+        : "",
     }));
   }
 
@@ -165,12 +208,16 @@ function NovoAtendimento() {
       missingFields.push("Telefone do cliente");
     }
 
+    if (!form.categoryId) {
+      missingFields.push("categoria");
+    }
+
     if (!form.serviceId) {
       missingFields.push("Serviço");
     }
 
-    if (!form.price) {
-      missingFields.push("Preço");
+    if (!form.price || currencyToNumber(form.price) <= 0) {
+      missingFields.push("preço");
     }
 
     if (missingFields.length === 0) {
@@ -217,7 +264,7 @@ function NovoAtendimento() {
           vehicleModel: form.vehicleModel.trim(),
           vehicleColor: form.vehicleColor.trim(),
           serviceId: Number(form.serviceId),
-          price: Number(form.price),
+          price: currencyToNumber(form.price),
           notes: form.notes,
         }),
       });
@@ -236,7 +283,7 @@ function NovoAtendimento() {
   }
 
   useEffect(() => {
-    loadServices();
+    loadOptions();
   }, []);
 
   useEffect(() => {
@@ -244,6 +291,12 @@ function NovoAtendimento() {
       searchVehicleByPlate();
     }
   }, [form.vehiclePlate]);
+
+  const filteredServices = form.categoryId
+    ? services.filter(
+        (service) => String(service.category_id) === String(form.categoryId),
+      )
+    : [];
 
   return (
     <main className="new-order-page">
@@ -257,7 +310,6 @@ function NovoAtendimento() {
           </button>
 
           <div>
-            <small>Operação</small>
             <h1>Novo atendimento</h1>
           </div>
         </header>
@@ -337,19 +389,42 @@ function NovoAtendimento() {
             <h2>Serviço</h2>
 
             <div className="form-group">
+              <label>Categoria</label>
+              <select
+                value={form.categoryId}
+                onChange={(event) => handleCategoryChange(event.target.value)}
+                disabled={loadingOptions}
+              >
+                <option value="">
+                  {loadingOptions
+                    ? "Carregando categorias..."
+                    : "Selecione uma categoria"}
+                </option>
+
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group">
               <label>Serviço</label>
               <select
                 value={form.serviceId}
                 onChange={(event) => handleServiceChange(event.target.value)}
-                disabled={loadingServices}
+                disabled={loadingOptions || !form.categoryId}
               >
                 <option value="">
-                  {loadingServices
-                    ? "Carregando serviços..."
-                    : "Selecione um serviço"}
+                  {!form.categoryId
+                    ? "Escolha uma categoria primeiro"
+                    : filteredServices.length === 0
+                      ? "Nenhum serviço nessa categoria"
+                      : "Selecione um serviço"}
                 </option>
 
-                {services.map((service) => (
+                {filteredServices.map((service) => (
                   <option key={service.id} value={service.id}>
                     {service.name}
                   </option>
@@ -360,10 +435,12 @@ function NovoAtendimento() {
             <div className="form-group">
               <label>Valor</label>
               <input
-                type="number"
-                placeholder="Ex: 70"
+                type="text"
+                placeholder="R$ 80,00"
                 value={form.price}
-                onChange={(event) => updateField("price", event.target.value)}
+                onChange={(event) =>
+                  updateField("price", formatCurrencyInput(event.target.value))
+                }
               />
             </div>
 

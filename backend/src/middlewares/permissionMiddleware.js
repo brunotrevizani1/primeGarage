@@ -3,32 +3,40 @@ const db = require("../database/connection");
 function permissionMiddleware(permissionCode) {
   return async (req, res, next) => {
     try {
-      if (req.user.role === "super_admin") {
+      const user = req.user;
+
+      if (!user) {
+        return res.status(401).json({
+          mensagem: "Usuário não autenticado.",
+        });
+      }
+
+      if (user.role === "super_admin" || user.role === "owner") {
         return next();
       }
 
       const [permissions] = await db.query(
         `
-        SELECT p.code
+        SELECT p.id
         FROM user_permissions up
         INNER JOIN permissions p ON up.permission_id = p.id
         WHERE up.user_id = ?
         AND p.code = ?
-        AND up.allowed = true
+        LIMIT 1
         `,
-        [req.user.id, permissionCode],
+        [user.id, permissionCode],
       );
 
       if (permissions.length === 0) {
         return res.status(403).json({
-          mensagem: "Você não tem permissão para acessar esta funcionalidade.",
+          mensagem: "Usuário não possui permissão para acessar este recurso.",
         });
       }
 
       next();
     } catch (error) {
       res.status(500).json({
-        mensagem: "Erro ao verificar permissão.",
+        mensagem: "Erro ao validar permissão.",
         erro: error.message,
       });
     }

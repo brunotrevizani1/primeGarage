@@ -3,6 +3,7 @@ const {
   listCategories,
   createCategory,
   updateCategory,
+  disableCategory,
 } = require("../controllers/serviceCategoryController");
 
 const authMiddleware = require("../middlewares/authMiddleware");
@@ -29,6 +30,13 @@ router.put(
   authMiddleware,
   permissionMiddleware("gerenciar_servicos"),
   updateCategory,
+);
+
+router.patch(
+  "/:id/disable",
+  authMiddleware,
+  permissionMiddleware("gerenciar_servicos"),
+  disableCategory,
 );
 
 module.exports = router;

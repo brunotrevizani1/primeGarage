@@ -4,6 +4,8 @@ import Atendimentos from "./pages/atendimentos/atendimentos";
 import NovoAtendimento from "./pages/novo-atendimento/novoAtendimento";
 import EditarAtendimento from "./pages/editar-atendimento/editarAtendimento";
 import Servicos from "./pages/servicos/servicos";
+import CategoriasServicos from "./pages/categorias-servicos/categoriasServicos";
+import Equipe from "./pages/equipe/equipe";
 
 function App() {
   const path = window.location.pathname;
@@ -34,6 +36,24 @@ function App() {
     }
 
     return <NovoAtendimento />;
+  }
+
+  if (path === "/categorias-servicos") {
+    if (!token) {
+      window.location.href = "/";
+      return null;
+    }
+
+    return <CategoriasServicos />;
+  }
+
+  if (path === "/equipe") {
+    if (!token) {
+      window.location.href = "/";
+      return null;
+    }
+
+    return <Equipe />;
   }
 
   if (path.startsWith("/editar-atendimento/")) {

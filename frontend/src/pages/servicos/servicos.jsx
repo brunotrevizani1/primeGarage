@@ -8,10 +8,9 @@ function Servicos() {
   const [selectedCategory, setSelectedCategory] = useState("todos");
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
-
+  const [servicesMenuOpen, setServicesMenuOpen] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(false);
   const [serviceModalOpen, setServiceModalOpen] = useState(false);
-  const [categoryModalOpen, setCategoryModalOpen] = useState(false);
-
   const [editingService, setEditingService] = useState(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -22,10 +21,7 @@ function Servicos() {
     description: "",
     price: "",
     duration_minutes: "",
-    status: "active",
   });
-
-  const [categoryName, setCategoryName] = useState("");
 
   function formatMoney(value) {
     return Number(value || 0).toLocaleString("pt-BR", {
@@ -34,15 +30,90 @@ function Servicos() {
     });
   }
 
+  function formatCurrencyInput(value) {
+    const numbers = String(value).replace(/\D/g, "");
+
+    if (!numbers) return "";
+
+    const amount = Number(numbers) / 100;
+
+    return amount.toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    });
+  }
+
+  function currencyToNumber(value) {
+    const numbers = String(value).replace(/\D/g, "");
+
+    if (!numbers) return 0;
+
+    return Number(numbers) / 100;
+  }
+
+  function formatDurationInput(value) {
+    const numbers = String(value).replace(/\D/g, "").slice(0, 4);
+
+    if (!numbers) return "";
+
+    if (numbers.length <= 2) {
+      return `0:${numbers.padStart(2, "0")}`;
+    }
+
+    const minutes = numbers.slice(-2);
+    const hours = numbers.slice(0, -2);
+
+    return `${Number(hours)}:${minutes}`;
+  }
+
+  function durationToMinutes(value) {
+    if (!value) return null;
+
+    const [hours, minutes] = value.split(":");
+
+    return Number(hours || 0) * 60 + Number(minutes || 0);
+  }
+
+  function minutesToDuration(value) {
+    if (!value) return "";
+
+    const hours = Math.floor(Number(value) / 60);
+    const minutes = Number(value) % 60;
+
+    return `${hours}:${String(minutes).padStart(2, "0")}`;
+  }
+
+  function formatDurationPreview(value) {
+    const totalMinutes = durationToMinutes(value);
+
+    if (!totalMinutes) return "";
+
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+
+    if (hours > 0 && minutes > 0) return `${hours}h ${minutes}min`;
+    if (hours > 0) return `${hours}h`;
+
+    return `${minutes}min`;
+  }
+
+  function formatDurationDisplay(value) {
+    if (!value) return "Não definida";
+
+    const hours = Math.floor(Number(value) / 60);
+    const minutes = Number(value) % 60;
+
+    if (hours > 0 && minutes > 0) return `${hours}h ${minutes}min`;
+    if (hours > 0) return `${hours}h`;
+
+    return `${minutes} min`;
+  }
+
   function updateServiceField(field, value) {
     setServiceForm((currentForm) => ({
       ...currentForm,
       [field]: value,
     }));
-  }
-
-  function onlyNumbers(value) {
-    return value.replace(/\D/g, "");
   }
 
   function handleLogout() {
@@ -72,17 +143,14 @@ function Servicos() {
     setEditingService(null);
 
     setServiceForm({
-      category_id:
-        selectedCategory !== "todos"
-          ? selectedCategory
-          : categories[0]?.id || "",
+      category_id: categories[0]?.id || "",
       name: "",
       description: "",
       price: "",
       duration_minutes: "",
-      status: "active",
     });
 
+    setError("");
     setServiceModalOpen(true);
   }
 
@@ -93,11 +161,13 @@ function Servicos() {
       category_id: service.category_id || "",
       name: service.name || "",
       description: service.description || "",
-      price: service.price || "",
-      duration_minutes: service.duration_minutes || "",
-      status: service.status || "active",
+      price: formatCurrencyInput(
+        String(Math.round(Number(service.price || 0) * 100)),
+      ),
+      duration_minutes: minutesToDuration(service.duration_minutes),
     });
 
+    setError("");
     setServiceModalOpen(true);
   }
 
@@ -110,21 +180,11 @@ function Servicos() {
   function validateServiceForm() {
     const missingFields = [];
 
-    if (!serviceForm.category_id) {
-      missingFields.push("categoria");
-    }
+    if (!serviceForm.category_id) missingFields.push("categoria");
+    if (!serviceForm.name.trim()) missingFields.push("nome do serviço");
+    if (!serviceForm.price) missingFields.push("preço");
 
-    if (!serviceForm.name.trim()) {
-      missingFields.push("nome do serviço");
-    }
-
-    if (!serviceForm.price) {
-      missingFields.push("preço");
-    }
-
-    if (missingFields.length === 0) {
-      return "";
-    }
+    if (missingFields.length === 0) return "";
 
     if (missingFields.length === 1) {
       return `Preencha o campo obrigatório: ${missingFields[0]}.`;
@@ -153,11 +213,8 @@ function Servicos() {
         category_id: Number(serviceForm.category_id),
         name: serviceForm.name.trim(),
         description: serviceForm.description.trim(),
-        price: Number(serviceForm.price),
-        duration_minutes: serviceForm.duration_minutes
-          ? Number(serviceForm.duration_minutes)
-          : null,
-        status: serviceForm.status,
+        price: currencyToNumber(serviceForm.price),
+        duration_minutes: durationToMinutes(serviceForm.duration_minutes),
       };
 
       if (editingService) {
@@ -181,14 +238,12 @@ function Servicos() {
     }
   }
 
-  async function disableService(serviceId) {
-    const confirmDisable = window.confirm(
-      "Tem certeza que deseja desativar este serviço?",
+  async function deleteService(serviceId) {
+    const confirmDelete = window.confirm(
+      "Tem certeza que deseja excluir este serviço?",
     );
 
-    if (!confirmDisable) {
-      return;
-    }
+    if (!confirmDelete) return;
 
     try {
       setError("");
@@ -203,41 +258,19 @@ function Servicos() {
     }
   }
 
-  async function saveCategory(event) {
-    event.preventDefault();
-
-    if (!categoryName.trim()) {
-      setError("Preencha o nome da categoria.");
-      return;
-    }
-
-    try {
-      setSaving(true);
-      setError("");
-
-      await apiRequest("/api/service-categories", {
-        method: "POST",
-        body: JSON.stringify({
-          name: categoryName.trim(),
-        }),
-      });
-
-      setCategoryName("");
-      setCategoryModalOpen(false);
-      await loadData();
-    } catch (error) {
-      setError(error.message);
-    } finally {
-      setSaving(false);
-    }
-  }
-
   const filteredServices =
     selectedCategory === "todos"
       ? services
       : services.filter(
           (service) => String(service.category_id) === String(selectedCategory),
         );
+
+  const selectedCategoryName =
+    selectedCategory === "todos"
+      ? "Todas as categorias"
+      : categories.find(
+          (category) => String(category.id) === String(selectedCategory),
+        )?.name || "Categoria";
 
   useEffect(() => {
     loadData();
@@ -264,7 +297,6 @@ function Servicos() {
           >
             <div className="side-menu-header">
               <strong>PrimeGarage</strong>
-
               <button type="button" onClick={() => setMenuOpen(false)}>
                 ×
               </button>
@@ -285,11 +317,56 @@ function Servicos() {
                 Atendimentos
               </button>
 
-              <button type="button">Equipe</button>
-
-              <button className="active" type="button">
-                Serviços
+              <button
+                type="button"
+                onClick={() => (window.location.href = "/equipe")}
+              >
+                Equipe
               </button>
+
+              <div className="menu-group">
+                <div className="menu-group">
+                  <button
+                    type="button"
+                    className="menu-parent-button"
+                    onClick={() => setServicesMenuOpen(!servicesMenuOpen)}
+                  >
+                    <span>Serviços</span>
+
+                    <svg
+                      className={
+                        servicesMenuOpen
+                          ? "submenu-arrow open"
+                          : "submenu-arrow"
+                      }
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                    >
+                      <path d="M7.22 9.47a.75.75 0 0 1 1.06 0L12 13.19l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0l-4.25-4.25a.75.75 0 0 1 0-1.06Z" />
+                    </svg>
+                  </button>
+
+                  {servicesMenuOpen && (
+                    <div className="submenu-links">
+                      <button
+                        type="button"
+                        onClick={() => (window.location.href = "/servicos")}
+                      >
+                        Lista de serviços
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          (window.location.href = "/categorias-servicos")
+                        }
+                      >
+                        Categorias
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
 
               <button type="button">Financeiro</button>
               <button type="button">Configurações</button>
@@ -303,6 +380,73 @@ function Servicos() {
               Sair da conta
             </button>
           </aside>
+        </div>
+      )}
+
+      {filterOpen && (
+        <div
+          className="service-modal-overlay"
+          onClick={() => setFilterOpen(false)}
+        >
+          <section
+            className="service-modal small"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="modal-header">
+              <div>
+                <strong>Filtrar serviços</strong>
+                <p>Escolha uma categoria para visualizar.</p>
+              </div>
+
+              <button type="button" onClick={() => setFilterOpen(false)}>
+                ×
+              </button>
+            </div>
+
+            <div className="filter-list">
+              <button
+                type="button"
+                className={selectedCategory === "todos" ? "active" : ""}
+                onClick={() => {
+                  setSelectedCategory("todos");
+                  setFilterOpen(false);
+                }}
+              >
+                <div>
+                  <strong>Todas as categorias</strong>
+                  <span>{services.length} serviços</span>
+                </div>
+              </button>
+
+              {categories.map((category) => {
+                const totalServices = services.filter(
+                  (service) =>
+                    String(service.category_id) === String(category.id),
+                ).length;
+
+                return (
+                  <button
+                    type="button"
+                    key={category.id}
+                    className={
+                      String(selectedCategory) === String(category.id)
+                        ? "active"
+                        : ""
+                    }
+                    onClick={() => {
+                      setSelectedCategory(category.id);
+                      setFilterOpen(false);
+                    }}
+                  >
+                    <div>
+                      <strong>{category.name}</strong>
+                      <span>{totalServices} serviços</span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
         </div>
       )}
 
@@ -338,13 +482,11 @@ function Servicos() {
                 >
                   <option value="">Selecione uma categoria</option>
 
-                  {categories
-                    .filter((category) => category.status === "active")
-                    .map((category) => (
-                      <option key={category.id} value={category.id}>
-                        {category.name}
-                      </option>
-                    ))}
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -363,7 +505,7 @@ function Servicos() {
               <div className="form-group">
                 <label>Descrição</label>
                 <textarea
-                  placeholder="Ex: Lavagem externa, aspiração interna e acabamento nos pneus..."
+                  placeholder="Ex: Lavagem externa, aspiração interna e acabamento..."
                   value={serviceForm.description}
                   onChange={(event) =>
                     updateServiceField("description", event.target.value)
@@ -375,42 +517,41 @@ function Servicos() {
                 <div className="form-group">
                   <label>Preço</label>
                   <input
-                    type="number"
-                    placeholder="Ex: 70"
+                    type="text"
+                    placeholder="R$ 80,00"
                     value={serviceForm.price}
                     onChange={(event) =>
-                      updateServiceField("price", event.target.value)
+                      updateServiceField(
+                        "price",
+                        formatCurrencyInput(event.target.value),
+                      )
                     }
                   />
                 </div>
 
                 <div className="form-group">
-                  <label>Duração</label>
-                  <input
-                    type="text"
-                    placeholder="Minutos"
-                    value={serviceForm.duration_minutes}
-                    onChange={(event) =>
-                      updateServiceField(
-                        "duration_minutes",
-                        onlyNumbers(event.target.value),
-                      )
-                    }
-                  />
-                </div>
-              </div>
+                  <label>Duração média</label>
 
-              <div className="form-group">
-                <label>Status</label>
-                <select
-                  value={serviceForm.status}
-                  onChange={(event) =>
-                    updateServiceField("status", event.target.value)
-                  }
-                >
-                  <option value="active">Ativo</option>
-                  <option value="inactive">Inativo</option>
-                </select>
+                  <div className="duration-input-wrapper">
+                    <input
+                      type="text"
+                      placeholder="Ex: 0:30"
+                      value={serviceForm.duration_minutes}
+                      onChange={(event) =>
+                        updateServiceField(
+                          "duration_minutes",
+                          formatDurationInput(event.target.value),
+                        )
+                      }
+                    />
+
+                    {formatDurationPreview(serviceForm.duration_minutes) && (
+                      <span>
+                        {formatDurationPreview(serviceForm.duration_minutes)}
+                      </span>
+                    )}
+                  </div>
+                </div>
               </div>
 
               <button
@@ -423,51 +564,6 @@ function Servicos() {
                   : editingService
                     ? "Salvar alterações"
                     : "Criar serviço"}
-              </button>
-            </form>
-          </section>
-        </div>
-      )}
-
-      {categoryModalOpen && (
-        <div
-          className="service-modal-overlay"
-          onClick={() => setCategoryModalOpen(false)}
-        >
-          <section
-            className="service-modal small"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="modal-header">
-              <div>
-                <strong>Nova categoria</strong>
-                <p>Ex: Caminhonete, Frota, Estética premium.</p>
-              </div>
-
-              <button type="button" onClick={() => setCategoryModalOpen(false)}>
-                ×
-              </button>
-            </div>
-
-            {error && <div className="services-error">{error}</div>}
-
-            <form className="service-form" onSubmit={saveCategory}>
-              <div className="form-group">
-                <label>Nome da categoria</label>
-                <input
-                  type="text"
-                  placeholder="Ex: Caminhonete"
-                  value={categoryName}
-                  onChange={(event) => setCategoryName(event.target.value)}
-                />
-              </div>
-
-              <button
-                className="save-service-button"
-                type="submit"
-                disabled={saving}
-              >
-                {saving ? "Salvando..." : "Criar categoria"}
               </button>
             </form>
           </section>
@@ -491,61 +587,52 @@ function Servicos() {
           </div>
 
           <button
-            className="add-service-button"
+            className="refresh-button"
             type="button"
-            onClick={openCreateServiceModal}
+            onClick={loadData}
+            aria-label="Atualizar serviços"
           >
-            +
+            ↻
           </button>
         </header>
 
-        {error && !serviceModalOpen && !categoryModalOpen && (
+        {error && !serviceModalOpen && (
           <div className="services-error">{error}</div>
         )}
 
-        <section className="category-section">
-          <div className="category-title">
-            <div>
-              <h2>Categorias</h2>
-            </div>
-
-            <button type="button" onClick={() => setCategoryModalOpen(true)}>
-              + Categoria
-            </button>
-          </div>
-
-          <div className="category-list">
-            <button
-              type="button"
-              className={selectedCategory === "todos" ? "active" : ""}
-              onClick={() => setSelectedCategory("todos")}
-            >
-              Todos
-            </button>
-
-            {categories.map((category) => (
-              <button
-                type="button"
-                key={category.id}
-                className={
-                  String(selectedCategory) === String(category.id)
-                    ? "active"
-                    : ""
-                }
-                onClick={() => setSelectedCategory(category.id)}
-              >
-                {category.name}
-              </button>
-            ))}
-          </div>
-        </section>
-
         <section className="services-list-section">
-          <div className="section-title">
+          <div className="panel-header">
             <div>
-              <small>Serviços cadastrados</small>
-              <h2>{filteredServices.length} serviços</h2>
+              <small>{selectedCategoryName}</small>
+
+              <div className="title-with-actions">
+                <h2>{filteredServices.length} serviços</h2>
+
+                <button
+                  type="button"
+                  className={`filter-icon-button ${
+                    selectedCategory !== "todos" ? "active" : ""
+                  }`}
+                  onClick={() => setFilterOpen(true)}
+                  aria-label="Filtrar serviços"
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4.5 6.75A.75.75 0 0 1 5.25 6h13.5a.75.75 0 0 1 .53 1.28L14 12.56v4.69a.75.75 0 0 1-.36.64l-3 1.8A.75.75 0 0 1 9.5 19.05v-6.49L4.72 7.28a.75.75 0 0 1-.22-.53Zm2.44.75 3.86 4.26c.13.14.2.32.2.5v5.46l1.5-.9v-4.56c0-.2.08-.39.22-.53l4.22-4.23H6.94Z" />
+                  </svg>
+                </button>
+              </div>
             </div>
+
+            <button
+              className="add-service-icon-button"
+              type="button"
+              onClick={openCreateServiceModal}
+              aria-label="Adicionar serviço"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 5a1 1 0 0 1 1 1v5h5a1 1 0 1 1 0 2h-5v5a1 1 0 1 1-2 0v-5H6a1 1 0 1 1 0-2h5V6a1 1 0 0 1 1-1Z" />
+              </svg>
+            </button>
           </div>
 
           {filteredServices.length === 0 ? (
@@ -563,9 +650,29 @@ function Servicos() {
                       <h3>{service.name}</h3>
                     </div>
 
-                    <span className={`service-status ${service.status}`}>
-                      {service.status === "active" ? "Ativo" : "Inativo"}
-                    </span>
+                    <div className="service-icon-actions">
+                      <button
+                        type="button"
+                        className="icon-action edit-icon"
+                        onClick={() => openEditServiceModal(service)}
+                        aria-label="Editar serviço"
+                      >
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                          <path d="M4.75 16.95 16.67 5.03a2.3 2.3 0 0 1 3.25 3.25L8 20.2a1.2 1.2 0 0 1-.55.31l-3.15.78a.75.75 0 0 1-.9-.9l.78-3.15c.05-.21.16-.4.31-.55Zm13-10.86L6.05 17.79l-.39 1.56 1.56-.39 11.7-11.7a.8.8 0 0 0-1.13-1.13Z" />
+                        </svg>
+                      </button>
+
+                      <button
+                        type="button"
+                        className="icon-action delete-icon"
+                        onClick={() => deleteService(service.id)}
+                        aria-label="Excluir serviço"
+                      >
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                          <path d="M9 4.75A2.75 2.75 0 0 1 11.75 2h.5A2.75 2.75 0 0 1 15 4.75h3.25a.75.75 0 0 1 0 1.5H17.5l-.68 12.2A2.75 2.75 0 0 1 14.07 21H9.93a2.75 2.75 0 0 1-2.75-2.55L6.5 6.25h-.75a.75.75 0 0 1 0-1.5H9Z" />
+                        </svg>
+                      </button>
+                    </div>
                   </div>
 
                   {service.description && (
@@ -581,31 +688,9 @@ function Servicos() {
                     <div>
                       <small>Duração</small>
                       <strong>
-                        {service.duration_minutes
-                          ? `${service.duration_minutes} min`
-                          : "Não definida"}
+                        {formatDurationDisplay(service.duration_minutes)}
                       </strong>
                     </div>
-                  </div>
-
-                  <div className="service-actions">
-                    <button
-                      type="button"
-                      className="edit-service"
-                      onClick={() => openEditServiceModal(service)}
-                    >
-                      Editar
-                    </button>
-
-                    {service.status === "active" && (
-                      <button
-                        type="button"
-                        className="disable-service"
-                        onClick={() => disableService(service.id)}
-                      >
-                        Desativar
-                      </button>
-                    )}
                   </div>
                 </article>
               ))}
