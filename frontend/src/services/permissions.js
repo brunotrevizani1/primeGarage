@@ -3,13 +3,6 @@ import { apiRequest } from "./api";
 export async function loadUserPermissions() {
   const response = await apiRequest("/api/team/my-permissions");
 
-  localStorage.setItem(
-    "primegarage_permissions",
-    JSON.stringify(response.permissions || []),
-  );
-
-  localStorage.setItem("primegarage_role", response.role || "");
-
   return {
     role: response.role,
     permissions: response.permissions || [],
@@ -17,26 +10,13 @@ export async function loadUserPermissions() {
 }
 
 export function getSavedPermissions() {
-  try {
-    return JSON.parse(localStorage.getItem("primegarage_permissions")) || [];
-  } catch {
-    return [];
-  }
+  return [];
 }
 
 export function getSavedRole() {
-  return localStorage.getItem("primegarage_role") || "";
+  return "";
 }
 
-export function hasPermission(
-  permissionCode,
-  permissions = getSavedPermissions(),
-) {
-  const role = getSavedRole();
-
-  if (role === "owner" || role === "super_admin") {
-    return true;
-  }
-
+export function hasPermission(permissionCode, permissions = []) {
   return permissions.includes(permissionCode);
 }

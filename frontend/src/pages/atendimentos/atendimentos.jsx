@@ -181,13 +181,14 @@ function Atendimentos() {
     return orders.filter((order) => order.status === status).length;
   }
 
-  function handleLogout() {
-    localStorage.removeItem("primegarage_token");
-    localStorage.removeItem("primegarage_user");
-    localStorage.removeItem("primegarage_permissions");
-    localStorage.removeItem("primegarage_role");
-
-    window.location.href = "/";
+  async function handleLogout() {
+    try {
+      await apiRequest("/api/auth/logout", {
+        method: "POST",
+      });
+    } finally {
+      window.location.href = "/";
+    }
   }
 
   async function loadOrders() {

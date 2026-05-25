@@ -14,6 +14,7 @@ async function createOrder(req, res) {
       vehicleColor,
       serviceId,
       responsibleUserId,
+      scheduledDate,
       price,
       notes,
     } = req.body;
@@ -120,11 +121,17 @@ async function createOrder(req, res) {
       vehicleId = vehicleResult.insertId;
     }
 
+    const today = new Date().toISOString().slice(0, 10);
+    const orderDate = scheduledDate || today;
+
+    const initialStatus = orderDate > today ? "agendado" : "na_fila";
+
     const [orderResult] = await connection.query(
       `
+      
       INSERT INTO service_orders
-      (business_id, customer_id, vehicle_id, service_id, responsible_user_id, status, price, notes)
-      VALUES (?, ?, ?, ?, ?, 'na_fila', ?, ?)
+      (business_id, customer_id, vehicle_id, service_id, responsible_user_id, scheduled_date, status, price, notes)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
       [
         businessId,
@@ -132,6 +139,8 @@ async function createOrder(req, res) {
         vehicleId,
         serviceId,
         responsibleUserId || null,
+        orderDate,
+        initialStatus,
         price,
         notes || null,
       ],
@@ -145,7 +154,8 @@ async function createOrder(req, res) {
         id: orderResult.insertId,
         customerId,
         vehicleId,
-        status: "na_fila",
+        status: initialStatus,
+        scheduledDate: orderDate,
       },
     });
   } catch (error) {
@@ -242,6 +252,7 @@ async function updateOrderStatus(req, res) {
     }
 
     const allowedStatus = [
+      "agendado",
       "na_fila",
       "em_lavagem",
       "pronto",
@@ -512,7 +523,7 @@ async function listOrders(req, res) {
   try {
     const businessId = req.user.business_id;
 
-    const { startDate, endDate, status, plate, customer } = req.query;
+    const { date, startDate, endDate, status, plate, customer } = req.query;
 
     if (!businessId) {
       return res.status(400).json({
@@ -523,11 +534,14 @@ async function listOrders(req, res) {
     const filters = ["so.business_id = ?"];
     const values = [businessId];
 
-    if (startDate && endDate) {
-      filters.push("DATE(so.entry_time) BETWEEN ? AND ?");
+    if (date) {
+      filters.push("so.scheduled_date = ?");
+      values.push(date);
+    } else if (startDate && endDate) {
+      filters.push("so.scheduled_date BETWEEN ? AND ?");
       values.push(startDate, endDate);
     } else {
-      filters.push("DATE(so.entry_time) = CURDATE()");
+      filters.push("so.scheduled_date = CURDATE()");
     }
 
     if (status && status !== "todos") {
@@ -552,6 +566,7 @@ async function listOrders(req, res) {
         so.status,
         so.price,
         so.notes,
+        so.scheduled_date,
         so.entry_time,
         c.name AS customer_name,
         c.phone AS customer_phone,
@@ -566,7 +581,17 @@ async function listOrders(req, res) {
       INNER JOIN services s ON so.service_id = s.id
       LEFT JOIN users u ON so.responsible_user_id = u.id
       WHERE ${filters.join(" AND ")}
-      ORDER BY so.entry_time DESC
+      ORDER BY 
+  CASE so.status
+    WHEN 'agendado' THEN 1
+    WHEN 'na_fila' THEN 2
+    WHEN 'em_lavagem' THEN 3
+    WHEN 'pronto' THEN 4
+    WHEN 'entregue' THEN 5
+    WHEN 'cancelado' THEN 6
+    ELSE 7
+  END,
+  so.entry_time ASC
       `,
       values,
     );

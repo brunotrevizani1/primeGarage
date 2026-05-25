@@ -50,6 +50,7 @@ function NovoAtendimento() {
     vehicleColor: "",
     categoryId: "",
     serviceId: "",
+    scheduledDate: new Date().toISOString().slice(0, 10),
     price: "",
     notes: "",
   });
@@ -295,6 +296,7 @@ function NovoAtendimento() {
           vehicleModel: form.vehicleModel.trim(),
           vehicleColor: form.vehicleColor.trim(),
           serviceId: Number(form.serviceId),
+          scheduledDate: form.scheduledDate,
           price: currencyToNumber(form.price),
           notes: form.notes,
         }),
@@ -493,13 +495,12 @@ function NovoAtendimento() {
             </div>
 
             <div className="form-group">
-              <label>Valor</label>
+              <label>Data do atendimento</label>
               <input
-                type="text"
-                placeholder="R$ 80,00"
-                value={form.price}
+                type="date"
+                value={form.scheduledDate}
                 onChange={(event) =>
-                  updateField("price", formatCurrencyInput(event.target.value))
+                  updateField("scheduledDate", event.target.value)
                 }
               />
             </div>
@@ -515,7 +516,7 @@ function NovoAtendimento() {
           </div>
 
           <button className="save-button" type="submit" disabled={saving}>
-            {saving ? "Salvando..." : "Adicionar à fila"}
+            {saving ? "Salvando..." : "Salvar atendimento"}
           </button>
         </form>
       </section>

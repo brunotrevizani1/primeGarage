@@ -2,18 +2,14 @@ const jwt = require("jsonwebtoken");
 
 function authMiddleware(req, res, next) {
   const authHeader = req.headers.authorization;
+  const headerToken = authHeader ? authHeader.split(" ")[1] : null;
+  const cookieToken = req.cookies ? req.cookies.primegarage_token : null;
 
-  if (!authHeader) {
-    return res.status(401).json({
-      mensagem: "Token não informado.",
-    });
-  }
-
-  const [, token] = authHeader.split(" ");
+  const token = cookieToken || headerToken;
 
   if (!token) {
     return res.status(401).json({
-      mensagem: "Token inválido.",
+      mensagem: "Token não informado.",
     });
   }
 

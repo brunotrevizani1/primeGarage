@@ -15,10 +15,17 @@ const financeRoutes = require("./routes/financeRoutes");
 const vehicleRoutes = require("./routes/vehicleRoutes");
 const serviceCategoryRoutes = require("./routes/serviceCategoryRoutes");
 const teamRoutes = require("./routes/teamRoutes");
+const cookieParser = require("cookie-parser");
 
 const app = express();
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL || "http://localhost:5173",
+    credentials: true,
+  }),
+);
 
-app.use(cors());
+app.use(cookieParser());
 app.use(express.json());
 
 app.use("/api/auth", authRoutes);

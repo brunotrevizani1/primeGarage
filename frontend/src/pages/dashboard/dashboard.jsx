@@ -173,13 +173,14 @@ function Dashboard() {
     return orders.filter((order) => order.status === status).length;
   }
 
-  function handleLogout() {
-    localStorage.removeItem("primegarage_token");
-    localStorage.removeItem("primegarage_user");
-    localStorage.removeItem("primegarage_permissions");
-    localStorage.removeItem("primegarage_role");
-
-    window.location.href = "/";
+  async function handleLogout() {
+    try {
+      await apiRequest("/api/auth/logout", {
+        method: "POST",
+      });
+    } finally {
+      window.location.href = "/";
+    }
   }
 
   async function loadDashboard() {
@@ -208,8 +209,8 @@ function Dashboard() {
         return;
       }
 
-      const savedUser = JSON.parse(localStorage.getItem("primegarage_user"));
-      setUser(savedUser);
+      const userResponse = await apiRequest("/api/auth/me");
+      setUser(userResponse.user);
 
       const businessResponse = await apiRequest("/api/business/me");
       setBusiness(businessResponse.business);
