@@ -35,6 +35,54 @@ async function listEmployees(req, res) {
   }
 }
 
+function normalizePermissions(permissions = []) {
+  const normalized = new Set(permissions);
+
+  if (
+    normalized.has("criar_atendimento") ||
+    normalized.has("editar_atendimento") ||
+    normalized.has("alterar_status") ||
+    normalized.has("cancelar_atendimento")
+  ) {
+    normalized.add("ver_fila");
+  }
+
+  if (
+    normalized.has("criar_servico") ||
+    normalized.has("editar_servico") ||
+    normalized.has("excluir_servico")
+  ) {
+    normalized.add("ver_servicos");
+  }
+
+  if (
+    normalized.has("ver_categorias") ||
+    normalized.has("criar_categoria") ||
+    normalized.has("editar_categoria") ||
+    normalized.has("excluir_categoria")
+  ) {
+    normalized.add("ver_servicos");
+  }
+
+  if (
+    normalized.has("criar_categoria") ||
+    normalized.has("editar_categoria") ||
+    normalized.has("excluir_categoria")
+  ) {
+    normalized.add("ver_categorias");
+  }
+
+  if (
+    normalized.has("criar_funcionario") ||
+    normalized.has("editar_funcionario") ||
+    normalized.has("excluir_funcionario")
+  ) {
+    normalized.add("ver_equipe");
+  }
+
+  return Array.from(normalized);
+}
+
 async function createEmployee(req, res) {
   const connection = await db.getConnection();
 
@@ -87,22 +135,24 @@ async function createEmployee(req, res) {
 
     const employeeId = result.insertId;
 
-    if (Array.isArray(permissions) && permissions.length > 0) {
+    const normalizedPermissions = normalizePermissions(permissions);
+
+    if (normalizedPermissions.length > 0) {
       const [permissionRows] = await connection.query(
         `
-        SELECT id, code
-        FROM permissions
-        WHERE code IN (?)
-        `,
-        [permissions],
+    SELECT id, code
+    FROM permissions
+    WHERE code IN (?)
+    `,
+        [normalizedPermissions],
       );
 
       for (const permission of permissionRows) {
         await connection.query(
           `
-          INSERT IGNORE INTO user_permissions (user_id, permission_id)
-          VALUES (?, ?)
-          `,
+      INSERT IGNORE INTO user_permissions (user_id, permission_id)
+      VALUES (?, ?)
+      `,
           [employeeId, permission.id],
         );
       }
@@ -379,14 +429,16 @@ async function updateEmployeePermissions(req, res) {
       [id],
     );
 
-    if (permissions.length > 0) {
+    const normalizedPermissions = normalizePermissions(permissions);
+
+    if (normalizedPermissions.length > 0) {
       const [permissionRows] = await connection.query(
         `
         SELECT id, code
         FROM permissions
         WHERE code IN (?)
         `,
-        [permissions],
+        [normalizedPermissions],
       );
 
       for (const permission of permissionRows) {
@@ -417,6 +469,48 @@ async function updateEmployeePermissions(req, res) {
   }
 }
 
+async function getMyPermissions(req, res) {
+  try {
+    const user = req.user;
+
+    if (user.role === "super_admin" || user.role === "owner") {
+      const [permissions] = await db.query(
+        `
+        SELECT code
+        FROM permissions
+        `,
+      );
+
+      return res.json({
+        mensagem: "Permissões listadas com sucesso.",
+        role: user.role,
+        permissions: permissions.map((permission) => permission.code),
+      });
+    }
+
+    const [permissions] = await db.query(
+      `
+      SELECT p.code
+      FROM user_permissions up
+      INNER JOIN permissions p ON up.permission_id = p.id
+      WHERE up.user_id = ?
+      `,
+      [user.id],
+    );
+
+    res.json({
+      mensagem: "Permissões listadas com sucesso.",
+      role: user.role,
+      permissions: permissions.map((permission) => permission.code),
+    });
+  } catch (error) {
+    res.status(500).json({
+      mensagem: "Erro ao buscar permissões do usuário.",
+      erro: error.message,
+    });
+  }
+}
+
 module.exports = {
   listEmployees,
   createEmployee,
@@ -425,4 +519,5 @@ module.exports = {
   listPermissions,
   getEmployeePermissions,
   updateEmployeePermissions,
+  getMyPermissions,
 };

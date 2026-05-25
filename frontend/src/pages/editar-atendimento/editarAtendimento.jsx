@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
 import { apiRequest } from "../../services/api";
 import "./editarAtendimento.css";
+import {
+  getSavedPermissions,
+  getSavedRole,
+  loadUserPermissions,
+} from "../../services/permissions";
 
 function EditarAtendimento() {
   const orderId = window.location.pathname.split("/").pop();
@@ -11,6 +16,8 @@ function EditarAtendimento() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [userPermissions, setUserPermissions] = useState(getSavedPermissions());
+  const [userRole, setUserRole] = useState(getSavedRole());
 
   const [form, setForm] = useState({
     customerName: "",
@@ -22,6 +29,30 @@ function EditarAtendimento() {
     price: "",
     notes: "",
   });
+
+  function getFirstAllowedPath(permissions, role) {
+    if (role === "owner" || role === "super_admin") {
+      return "/dashboard";
+    }
+
+    if (permissions.includes("ver_dashboard")) {
+      return "/dashboard";
+    }
+
+    if (permissions.includes("ver_fila")) {
+      return "/atendimentos";
+    }
+
+    if (permissions.includes("ver_servicos")) {
+      return "/servicos";
+    }
+
+    if (permissions.includes("ver_equipe")) {
+      return "/equipe";
+    }
+
+    return "/";
+  }
 
   function updateField(field, value) {
     setForm((currentForm) => ({
@@ -227,7 +258,36 @@ function EditarAtendimento() {
   }
 
   useEffect(() => {
-    loadData();
+    async function checkPermissionAndLoad() {
+      try {
+        const permissionResponse = await loadUserPermissions();
+
+        const currentPermissions = permissionResponse.permissions || [];
+        const currentRole = permissionResponse.role || "";
+
+        setUserPermissions(currentPermissions);
+        setUserRole(currentRole);
+
+        const canAccessEditOrder =
+          currentRole === "owner" ||
+          currentRole === "super_admin" ||
+          currentPermissions.includes("editar_atendimento");
+
+        if (!canAccessEditOrder) {
+          window.location.href = getFirstAllowedPath(
+            currentPermissions,
+            currentRole,
+          );
+          return;
+        }
+
+        loadData();
+      } catch (error) {
+        setError(error.message);
+      }
+    }
+
+    checkPermissionAndLoad();
   }, []);
 
   if (loading) {

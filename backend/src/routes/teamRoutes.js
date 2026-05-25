@@ -8,12 +8,22 @@ const {
   listPermissions,
   getEmployeePermissions,
   updateEmployeePermissions,
+  getMyPermissions,
 } = require("../controllers/teamController");
 
 const authMiddleware = require("../middlewares/authMiddleware");
 const permissionMiddleware = require("../middlewares/permissionMiddleware");
 
 const router = express.Router();
+
+router.get("/my-permissions", authMiddleware, getMyPermissions);
+
+router.get(
+  "/permissions/list",
+  authMiddleware,
+  permissionMiddleware(["criar_funcionario", "editar_funcionario"]),
+  listPermissions,
+);
 
 router.get(
   "/",
@@ -25,42 +35,35 @@ router.get(
 router.post(
   "/",
   authMiddleware,
-  permissionMiddleware("gerenciar_equipe"),
+  permissionMiddleware("criar_funcionario"),
   createEmployee,
 );
 
 router.put(
   "/:id",
   authMiddleware,
-  permissionMiddleware("gerenciar_equipe"),
+  permissionMiddleware("editar_funcionario"),
   updateEmployee,
 );
 
 router.patch(
   "/:id/delete",
   authMiddleware,
-  permissionMiddleware("gerenciar_equipe"),
+  permissionMiddleware("excluir_funcionario"),
   deleteEmployee,
-);
-
-router.get(
-  "/permissions/list",
-  authMiddleware,
-  permissionMiddleware("alterar_permissoes"),
-  listPermissions,
 );
 
 router.get(
   "/:id/permissions",
   authMiddleware,
-  permissionMiddleware("alterar_permissoes"),
+  permissionMiddleware("editar_funcionario"),
   getEmployeePermissions,
 );
 
 router.put(
   "/:id/permissions",
   authMiddleware,
-  permissionMiddleware("alterar_permissoes"),
+  permissionMiddleware("editar_funcionario"),
   updateEmployeePermissions,
 );
 

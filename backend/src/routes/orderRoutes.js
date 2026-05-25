@@ -39,6 +39,12 @@ router.get("/", authMiddleware, permissionMiddleware("ver_fila"), listOrders);
 router.patch(
   "/:id/status",
   authMiddleware,
+  permissionMiddleware(["alterar_status", "cancelar_atendimento"]),
+  updateOrderStatus,
+);
+router.patch(
+  "/:id/status",
+  authMiddleware,
   permissionMiddleware("alterar_status"),
   updateOrderStatus,
 );

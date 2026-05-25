@@ -11,31 +11,35 @@ const permissionMiddleware = require("../middlewares/permissionMiddleware");
 
 const router = express.Router();
 
-router.post(
-  "/",
-  authMiddleware,
-  permissionMiddleware("gerenciar_servicos"),
-  createService,
-);
-
 router.get(
   "/",
   authMiddleware,
-  permissionMiddleware("gerenciar_servicos"),
+  permissionMiddleware([
+    "ver_servicos",
+    "criar_atendimento",
+    "editar_atendimento",
+  ]),
   listServices,
+);
+
+router.post(
+  "/",
+  authMiddleware,
+  permissionMiddleware("criar_servico"),
+  createService,
 );
 
 router.put(
   "/:id",
   authMiddleware,
-  permissionMiddleware("gerenciar_servicos"),
+  permissionMiddleware("editar_servico"),
   updateService,
 );
 
 router.patch(
   "/:id/disable",
   authMiddleware,
-  permissionMiddleware("gerenciar_servicos"),
+  permissionMiddleware("excluir_servico"),
   disableService,
 );
 

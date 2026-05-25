@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 import { apiRequest } from "../../services/api";
 import "./novoAtendimento.css";
+import {
+  getSavedPermissions,
+  getSavedRole,
+  hasPermission,
+  loadUserPermissions,
+} from "../../services/permissions";
 
 function NovoAtendimento() {
   const [categories, setCategories] = useState([]);
@@ -10,6 +16,31 @@ function NovoAtendimento() {
   const [searchingPlate, setSearchingPlate] = useState(false);
   const [plateMessage, setPlateMessage] = useState("");
   const [error, setError] = useState("");
+  const [userPermissions, setUserPermissions] = useState(getSavedPermissions());
+  const [userRole, setUserRole] = useState(getSavedRole());
+  function getFirstAllowedPath(permissions, role) {
+    if (role === "owner" || role === "super_admin") {
+      return "/dashboard";
+    }
+
+    if (permissions.includes("ver_dashboard")) {
+      return "/dashboard";
+    }
+
+    if (permissions.includes("ver_fila")) {
+      return "/atendimentos";
+    }
+
+    if (permissions.includes("ver_servicos")) {
+      return "/servicos";
+    }
+
+    if (permissions.includes("ver_equipe")) {
+      return "/equipe";
+    }
+
+    return "/";
+  }
 
   const [form, setForm] = useState({
     customerName: "",
@@ -283,7 +314,36 @@ function NovoAtendimento() {
   }
 
   useEffect(() => {
-    loadOptions();
+    async function checkPermissionAndLoad() {
+      try {
+        const permissionResponse = await loadUserPermissions();
+
+        const currentPermissions = permissionResponse.permissions || [];
+        const currentRole = permissionResponse.role || "";
+
+        setUserPermissions(currentPermissions);
+        setUserRole(currentRole);
+
+        const canAccessNewOrder =
+          currentRole === "owner" ||
+          currentRole === "super_admin" ||
+          currentPermissions.includes("criar_atendimento");
+
+        if (!canAccessNewOrder) {
+          window.location.href = getFirstAllowedPath(
+            currentPermissions,
+            currentRole,
+          );
+          return;
+        }
+
+        loadOptions();
+      } catch (error) {
+        setError(error.message);
+      }
+    }
+
+    checkPermissionAndLoad();
   }, []);
 
   useEffect(() => {

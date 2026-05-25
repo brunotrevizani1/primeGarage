@@ -1,6 +1,6 @@
 const db = require("../database/connection");
 
-function permissionMiddleware(permissionCode) {
+function permissionMiddleware(requiredPermissions) {
   return async (req, res, next) => {
     try {
       const user = req.user;
@@ -15,16 +15,20 @@ function permissionMiddleware(permissionCode) {
         return next();
       }
 
+      const permissionsArray = Array.isArray(requiredPermissions)
+        ? requiredPermissions
+        : [requiredPermissions];
+
       const [permissions] = await db.query(
         `
         SELECT p.id
         FROM user_permissions up
         INNER JOIN permissions p ON up.permission_id = p.id
         WHERE up.user_id = ?
-        AND p.code = ?
+        AND p.code IN (?)
         LIMIT 1
         `,
-        [user.id, permissionCode],
+        [user.id, permissionsArray],
       );
 
       if (permissions.length === 0) {

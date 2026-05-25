@@ -1,4 +1,5 @@
 const express = require("express");
+
 const {
   listCategories,
   createCategory,
@@ -14,28 +15,33 @@ const router = express.Router();
 router.get(
   "/",
   authMiddleware,
-  permissionMiddleware("gerenciar_servicos"),
+  permissionMiddleware([
+    "ver_categorias",
+    "ver_servicos",
+    "criar_atendimento",
+    "editar_atendimento",
+  ]),
   listCategories,
 );
 
 router.post(
   "/",
   authMiddleware,
-  permissionMiddleware("gerenciar_servicos"),
+  permissionMiddleware("criar_categoria"),
   createCategory,
 );
 
 router.put(
   "/:id",
   authMiddleware,
-  permissionMiddleware("gerenciar_servicos"),
+  permissionMiddleware("editar_categoria"),
   updateCategory,
 );
 
 router.patch(
   "/:id/disable",
   authMiddleware,
-  permissionMiddleware("gerenciar_servicos"),
+  permissionMiddleware("excluir_categoria"),
   disableCategory,
 );
 

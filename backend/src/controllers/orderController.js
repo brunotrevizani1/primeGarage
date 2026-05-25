@@ -208,6 +208,38 @@ async function updateOrderStatus(req, res) {
     const businessId = req.user.business_id;
     const { id } = req.params;
     const { status } = req.body;
+    const requestedStatus = req.body.status;
+
+    if (!requestedStatus) {
+      return res.status(400).json({
+        mensagem: "Status é obrigatório.",
+      });
+    }
+
+    if (req.user.role !== "owner" && req.user.role !== "super_admin") {
+      const requiredPermission =
+        requestedStatus === "cancelado"
+          ? "cancelar_atendimento"
+          : "alterar_status";
+
+      const [permissions] = await db.query(
+        `
+    SELECT p.id
+    FROM user_permissions up
+    INNER JOIN permissions p ON up.permission_id = p.id
+    WHERE up.user_id = ?
+    AND p.code = ?
+    LIMIT 1
+    `,
+        [req.user.id, requiredPermission],
+      );
+
+      if (permissions.length === 0) {
+        return res.status(403).json({
+          mensagem: "Usuário não possui permissão para realizar esta ação.",
+        });
+      }
+    }
 
     const allowedStatus = [
       "na_fila",

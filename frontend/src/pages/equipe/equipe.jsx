@@ -1,22 +1,30 @@
 import { useEffect, useState } from "react";
 import { apiRequest } from "../../services/api";
+import {
+  getSavedPermissions,
+  getSavedRole,
+  hasPermission,
+  loadUserPermissions,
+} from "../../services/permissions";
 import "./equipe.css";
 
 function Equipe() {
   const [employees, setEmployees] = useState([]);
-  const [permissions, setPermissions] = useState([]);
+  const [permissionOptions, setPermissionOptions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const [servicesMenuOpen, setServicesMenuOpen] = useState(false);
 
   const [employeeModalOpen, setEmployeeModalOpen] = useState(false);
-  const [permissionModalOpen, setPermissionModalOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState(null);
-  const [selectedEmployee, setSelectedEmployee] = useState(null);
 
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+
+  const [userPermissions, setUserPermissions] = useState(getSavedPermissions());
+  const [userRole, setUserRole] = useState(getSavedRole());
 
   const [form, setForm] = useState({
     name: "",
@@ -25,6 +33,44 @@ function Equipe() {
     password: "",
     permissions: [],
   });
+
+  const canViewDashboard = hasPermission("ver_dashboard", userPermissions);
+  const canViewQueue = hasPermission("ver_fila", userPermissions);
+  const canViewServices = hasPermission("ver_servicos", userPermissions);
+  const canViewCategories = hasPermission("ver_categorias", userPermissions);
+  const canViewTeam = hasPermission("ver_equipe", userPermissions);
+  const canCreateEmployee = hasPermission("criar_funcionario", userPermissions);
+  const canEditEmployee = hasPermission("editar_funcionario", userPermissions);
+  const canDeleteEmployee = hasPermission(
+    "excluir_funcionario",
+    userPermissions,
+  );
+
+  const canViewFinance = userRole === "owner" || userRole === "super_admin";
+
+  function getFirstAllowedPath(permissions, role) {
+    if (role === "owner" || role === "super_admin") {
+      return "/dashboard";
+    }
+
+    if (permissions.includes("ver_dashboard")) {
+      return "/dashboard";
+    }
+
+    if (permissions.includes("ver_fila")) {
+      return "/atendimentos";
+    }
+
+    if (permissions.includes("ver_servicos")) {
+      return "/servicos";
+    }
+
+    if (permissions.includes("ver_equipe")) {
+      return "/equipe";
+    }
+
+    return "/";
+  }
 
   function updateField(field, value) {
     setForm((currentForm) => ({
@@ -62,6 +108,9 @@ function Equipe() {
   function handleLogout() {
     localStorage.removeItem("primegarage_token");
     localStorage.removeItem("primegarage_user");
+    localStorage.removeItem("primegarage_permissions");
+    localStorage.removeItem("primegarage_role");
+
     window.location.href = "/";
   }
 
@@ -70,13 +119,46 @@ function Equipe() {
       setLoading(true);
       setError("");
 
+      const permissionResponse = await loadUserPermissions();
+
+      const currentPermissions = permissionResponse.permissions || [];
+      const currentRole = permissionResponse.role || "";
+
+      setUserPermissions(currentPermissions);
+      setUserRole(currentRole);
+
+      const canAccessTeam =
+        currentRole === "owner" ||
+        currentRole === "super_admin" ||
+        currentPermissions.includes("ver_equipe");
+
+      if (!canAccessTeam) {
+        window.location.href = getFirstAllowedPath(
+          currentPermissions,
+          currentRole,
+        );
+        return;
+      }
+
       const employeesResponse = await apiRequest("/api/team");
-      const permissionsResponse = await apiRequest(
-        "/api/team/permissions/list",
-      );
 
       setEmployees(employeesResponse.employees || []);
-      setPermissions(permissionsResponse.permissions || []);
+
+      const canAccessPermissions =
+        currentRole === "owner" ||
+        currentRole === "super_admin" ||
+        currentPermissions.includes("criar_funcionario") ||
+        currentPermissions.includes("editar_funcionario");
+
+      if (canAccessPermissions) {
+        const permissionsResponse = await apiRequest(
+          "/api/team/permissions/list",
+        );
+
+        setPermissionOptions(permissionsResponse.permissions || []);
+      } else {
+        setPermissionOptions([]);
+      }
     } catch (error) {
       setError(error.message);
     } finally {
@@ -85,9 +167,15 @@ function Equipe() {
   }
 
   function openCreateEmployeeModal() {
+    if (!canCreateEmployee) {
+      setError("Você não possui permissão para criar funcionários.");
+      return;
+    }
+
     setEditingEmployee(null);
     setStep(1);
     setError("");
+    setShowPassword(false);
 
     setForm({
       name: "",
@@ -101,44 +189,36 @@ function Equipe() {
   }
 
   async function openEditEmployeeModal(employee) {
+    if (!canEditEmployee) {
+      setError("Você não possui permissão para editar funcionários.");
+      return;
+    }
+
     try {
       setEditingEmployee(employee);
       setStep(1);
       setError("");
+      setShowPassword(false);
 
-      const permissionsResponse = await apiRequest(
-        `/api/team/${employee.id}/permissions`,
-      );
+      let employeePermissions = [];
+
+      if (canEditEmployee) {
+        const permissionsResponse = await apiRequest(
+          `/api/team/${employee.id}/permissions`,
+        );
+
+        employeePermissions = permissionsResponse.permissions || [];
+      }
 
       setForm({
         name: employee.name || "",
         email: employee.email || "",
         phone: formatPhone(employee.phone || ""),
         password: "",
-        permissions: permissionsResponse.permissions || [],
+        permissions: employeePermissions,
       });
 
       setEmployeeModalOpen(true);
-    } catch (error) {
-      setError(error.message);
-    }
-  }
-
-  async function openPermissionModal(employee) {
-    try {
-      setSelectedEmployee(employee);
-      setError("");
-
-      const permissionsResponse = await apiRequest(
-        `/api/team/${employee.id}/permissions`,
-      );
-
-      setForm((currentForm) => ({
-        ...currentForm,
-        permissions: permissionsResponse.permissions || [],
-      }));
-
-      setPermissionModalOpen(true);
     } catch (error) {
       setError(error.message);
     }
@@ -148,12 +228,6 @@ function Equipe() {
     setEmployeeModalOpen(false);
     setEditingEmployee(null);
     setStep(1);
-    setError("");
-  }
-
-  function closePermissionModal() {
-    setPermissionModalOpen(false);
-    setSelectedEmployee(null);
     setError("");
   }
 
@@ -189,7 +263,13 @@ function Equipe() {
     return `Preencha os campos obrigatórios: ${missingFields.join(", ")} e ${lastField}.`;
   }
 
-  function goToPermissionsStep() {
+  function handleStepChange(nextStep) {
+    if (nextStep === 1) {
+      setError("");
+      setStep(1);
+      return;
+    }
+
     const validationMessage = validateEmployeeData();
 
     if (validationMessage) {
@@ -201,26 +281,171 @@ function Equipe() {
     setStep(2);
   }
 
+  function getParentPermission(permissionCode) {
+    const parentPermissions = {
+      criar_atendimento: "ver_fila",
+      editar_atendimento: "ver_fila",
+      alterar_status: "ver_fila",
+      cancelar_atendimento: "ver_fila",
+
+      criar_servico: "ver_servicos",
+      editar_servico: "ver_servicos",
+      excluir_servico: "ver_servicos",
+
+      ver_categorias: "ver_servicos",
+      criar_categoria: "ver_categorias",
+      editar_categoria: "ver_categorias",
+      excluir_categoria: "ver_categorias",
+
+      criar_funcionario: "ver_equipe",
+      editar_funcionario: "ver_equipe",
+      excluir_funcionario: "ver_equipe",
+    };
+
+    return parentPermissions[permissionCode] || null;
+  }
+
+  function hasChildPermission(parentPermissionCode, selectedPermissions) {
+    const childPermissions = {
+      ver_fila: [
+        "criar_atendimento",
+        "editar_atendimento",
+        "alterar_status",
+        "cancelar_atendimento",
+      ],
+
+      ver_servicos: [
+        "criar_servico",
+        "editar_servico",
+        "excluir_servico",
+        "ver_categorias",
+        "criar_categoria",
+        "editar_categoria",
+        "excluir_categoria",
+      ],
+
+      ver_categorias: [
+        "criar_categoria",
+        "editar_categoria",
+        "excluir_categoria",
+      ],
+
+      ver_equipe: [
+        "criar_funcionario",
+        "editar_funcionario",
+        "excluir_funcionario",
+      ],
+    };
+
+    return (childPermissions[parentPermissionCode] || []).some(
+      (permissionCode) => selectedPermissions.includes(permissionCode),
+    );
+  }
+
+  function getPermissionDependencies(permissionCode) {
+    const dependencies = {
+      criar_atendimento: ["ver_fila"],
+      editar_atendimento: ["ver_fila"],
+      alterar_status: ["ver_fila"],
+      cancelar_atendimento: ["ver_fila"],
+
+      criar_servico: ["ver_servicos"],
+      editar_servico: ["ver_servicos"],
+      excluir_servico: ["ver_servicos"],
+
+      ver_categorias: ["ver_servicos"],
+      criar_categoria: ["ver_categorias", "ver_servicos"],
+      editar_categoria: ["ver_categorias", "ver_servicos"],
+      excluir_categoria: ["ver_categorias", "ver_servicos"],
+
+      criar_funcionario: ["ver_equipe"],
+      editar_funcionario: ["ver_equipe"],
+      excluir_funcionario: ["ver_equipe"],
+    };
+
+    return dependencies[permissionCode] || [];
+  }
+
   function togglePermission(permissionCode) {
     setForm((currentForm) => {
-      const hasPermission = currentForm.permissions.includes(permissionCode);
+      const selectedPermissions = currentForm.permissions;
+      const hasCurrentPermission = selectedPermissions.includes(permissionCode);
+
+      if (hasCurrentPermission) {
+        const isParentStillNeeded = hasChildPermission(
+          permissionCode,
+          selectedPermissions,
+        );
+
+        if (isParentStillNeeded) {
+          return currentForm;
+        }
+
+        return {
+          ...currentForm,
+          permissions: selectedPermissions.filter(
+            (code) => code !== permissionCode,
+          ),
+        };
+      }
+
+      const dependencies = getPermissionDependencies(permissionCode);
 
       return {
         ...currentForm,
-        permissions: hasPermission
-          ? currentForm.permissions.filter((code) => code !== permissionCode)
-          : [...currentForm.permissions, permissionCode],
+        permissions: Array.from(
+          new Set([...selectedPermissions, permissionCode, ...dependencies]),
+        ),
       };
     });
   }
 
+  function isPermissionLocked(permissionCode) {
+    return hasChildPermission(permissionCode, form.permissions);
+  }
+
+  function getPermissionOrder(permissionCode) {
+    const order = {
+      ver_dashboard: 1,
+
+      ver_fila: 1,
+      criar_atendimento: 2,
+      editar_atendimento: 3,
+      alterar_status: 4,
+      cancelar_atendimento: 5,
+
+      ver_servicos: 1,
+      criar_servico: 2,
+      editar_servico: 3,
+      excluir_servico: 4,
+
+      ver_categorias: 5,
+      criar_categoria: 6,
+      editar_categoria: 7,
+      excluir_categoria: 8,
+
+      ver_equipe: 1,
+      criar_funcionario: 2,
+      editar_funcionario: 3,
+      excluir_funcionario: 4,
+    };
+
+    return order[permissionCode] || 99;
+  }
+
   function groupPermissions() {
-    return permissions.reduce((groups, permission) => {
+    return permissionOptions.reduce((groups, permission) => {
       if (!groups[permission.group_name]) {
         groups[permission.group_name] = [];
       }
 
       groups[permission.group_name].push(permission);
+
+      Object.keys(groups).forEach((groupName) => {
+        groups[groupName].sort(
+          (a, b) => getPermissionOrder(a.code) - getPermissionOrder(b.code),
+        );
+      });
 
       return groups;
     }, {});
@@ -228,6 +453,16 @@ function Equipe() {
 
   async function saveEmployee(event) {
     event.preventDefault();
+
+    if (!editingEmployee && !canCreateEmployee) {
+      setError("Você não possui permissão para criar funcionários.");
+      return;
+    }
+
+    if (editingEmployee && !canEditEmployee) {
+      setError("Você não possui permissão para editar funcionários.");
+      return;
+    }
 
     try {
       setSaving(true);
@@ -274,30 +509,12 @@ function Equipe() {
     }
   }
 
-  async function savePermissionsOnly(event) {
-    event.preventDefault();
-
-    try {
-      setSaving(true);
-      setError("");
-
-      await apiRequest(`/api/team/${selectedEmployee.id}/permissions`, {
-        method: "PUT",
-        body: JSON.stringify({
-          permissions: form.permissions,
-        }),
-      });
-
-      await loadData();
-      closePermissionModal();
-    } catch (error) {
-      setError(error.message);
-    } finally {
-      setSaving(false);
-    }
-  }
-
   async function deleteEmployee(employee) {
+    if (!canDeleteEmployee) {
+      setError("Você não possui permissão para excluir funcionários.");
+      return;
+    }
+
     const confirmDelete = window.confirm(
       `Tem certeza que deseja excluir "${employee.name}" da equipe?`,
     );
@@ -324,6 +541,7 @@ function Equipe() {
   }, []);
 
   const permissionGroups = groupPermissions();
+  const canOpenPermissions = validateEmployeeData() === "";
 
   if (loading) {
     return (
@@ -346,72 +564,86 @@ function Equipe() {
           >
             <div className="side-menu-header">
               <strong>PrimeGarage</strong>
+
               <button type="button" onClick={() => setMenuOpen(false)}>
                 ×
               </button>
             </div>
 
             <nav className="side-menu-links">
-              <button
-                type="button"
-                onClick={() => (window.location.href = "/dashboard")}
-              >
-                Dashboard
-              </button>
-
-              <button
-                type="button"
-                onClick={() => (window.location.href = "/atendimentos")}
-              >
-                Atendimentos
-              </button>
-
-              <button className="active" type="button">
-                Equipe
-              </button>
-
-              <div className="menu-group">
+              {canViewDashboard && (
                 <button
                   type="button"
-                  className="menu-parent-button"
-                  onClick={() => setServicesMenuOpen(!servicesMenuOpen)}
+                  onClick={() => (window.location.href = "/dashboard")}
                 >
-                  <span>Serviços</span>
-
-                  <svg
-                    className={
-                      servicesMenuOpen ? "submenu-arrow open" : "submenu-arrow"
-                    }
-                    viewBox="0 0 24 24"
-                    aria-hidden="true"
-                  >
-                    <path d="M7.22 9.47a.75.75 0 0 1 1.06 0L12 13.19l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0l-4.25-4.25a.75.75 0 0 1 0-1.06Z" />
-                  </svg>
+                  Dashboard
                 </button>
+              )}
 
-                {servicesMenuOpen && (
-                  <div className="submenu-links">
-                    <button
-                      type="button"
-                      onClick={() => (window.location.href = "/servicos")}
-                    >
-                      Lista de serviços
-                    </button>
+              {canViewQueue && (
+                <button
+                  type="button"
+                  onClick={() => (window.location.href = "/atendimentos")}
+                >
+                  Atendimentos
+                </button>
+              )}
 
-                    <button
-                      type="button"
-                      onClick={() =>
-                        (window.location.href = "/categorias-servicos")
+              {canViewTeam && (
+                <button className="active" type="button">
+                  Equipe
+                </button>
+              )}
+
+              {canViewServices && (
+                <div className="menu-group">
+                  <button
+                    type="button"
+                    className="menu-parent-button"
+                    onClick={() => setServicesMenuOpen(!servicesMenuOpen)}
+                  >
+                    <span>Serviços</span>
+
+                    <svg
+                      className={
+                        servicesMenuOpen
+                          ? "submenu-arrow open"
+                          : "submenu-arrow"
                       }
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
                     >
-                      Categorias
-                    </button>
-                  </div>
-                )}
-              </div>
+                      <path d="M7.22 9.47a.75.75 0 0 1 1.06 0L12 13.19l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0l-4.25-4.25a.75.75 0 0 1 0-1.06Z" />
+                    </svg>
+                  </button>
 
-              <button type="button">Financeiro</button>
-              <button type="button">Configurações</button>
+                  {servicesMenuOpen && (
+                    <div className="submenu-links">
+                      <button
+                        type="button"
+                        onClick={() => (window.location.href = "/servicos")}
+                      >
+                        Lista de serviços
+                      </button>
+
+                      {canViewCategories && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            (window.location.href = "/categorias-servicos")
+                          }
+                        >
+                          Categorias
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {canViewFinance && <button type="button">Financeiro</button>}
+
+              {canViewFinance && <button type="button">Configurações</button>}
             </nav>
 
             <button
@@ -449,13 +681,31 @@ function Equipe() {
             </div>
 
             <div className="steps-indicator">
-              <span className={step === 1 ? "active" : ""}>Dados</span>
-              <span className={step === 2 ? "active" : ""}>Permissões</span>
+              <button
+                type="button"
+                className={step === 1 ? "active" : ""}
+                onClick={() => handleStepChange(1)}
+              >
+                Dados
+              </button>
+
+              <button
+                type="button"
+                className={step === 2 ? "active" : ""}
+                onClick={() => handleStepChange(2)}
+                disabled={!canOpenPermissions}
+              >
+                Permissões
+              </button>
             </div>
 
             {error && <div className="team-error">{error}</div>}
 
-            <form className="team-form" onSubmit={saveEmployee}>
+            <form
+              className="team-form"
+              onSubmit={saveEmployee}
+              autoComplete="off"
+            >
               {step === 1 && (
                 <>
                   <div className="form-group">
@@ -464,6 +714,8 @@ function Equipe() {
                       type="text"
                       placeholder="Ex: João Silva"
                       value={form.name}
+                      autoComplete="off"
+                      name="employee_name"
                       onChange={(event) =>
                         updateField("name", event.target.value)
                       }
@@ -474,8 +726,10 @@ function Equipe() {
                     <label>E-mail</label>
                     <input
                       type="email"
-                      placeholder="funcionario@email.com"
+                      placeholder="nome@email.com"
                       value={form.email}
+                      autoComplete="off"
+                      name="employee_email"
                       onChange={(event) =>
                         updateField("email", event.target.value)
                       }
@@ -488,6 +742,8 @@ function Equipe() {
                       type="text"
                       placeholder="(51) 99999-9999"
                       value={form.phone}
+                      autoComplete="off"
+                      name="employee_phone"
                       onChange={(event) =>
                         handlePhoneChange(event.target.value)
                       }
@@ -498,24 +754,86 @@ function Equipe() {
                     <label>
                       {editingEmployee ? "Nova senha opcional" : "Senha"}
                     </label>
-                    <input
-                      type="password"
-                      placeholder={
-                        editingEmployee
-                          ? "Deixe em branco para manter"
-                          : "Digite uma senha"
-                      }
-                      value={form.password}
-                      onChange={(event) =>
-                        updateField("password", event.target.value)
-                      }
-                    />
+
+                    <div className="password-input-wrapper">
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        placeholder={
+                          editingEmployee
+                            ? "Deixe em branco para manter"
+                            : "Digite uma senha"
+                        }
+                        value={form.password}
+                        autoComplete="new-password"
+                        name="employee_new_password"
+                        onChange={(event) =>
+                          updateField("password", event.target.value)
+                        }
+                      />
+
+                      <button
+                        type="button"
+                        className="password-eye-button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        aria-label={
+                          showPassword ? "Ocultar senha" : "Mostrar senha"
+                        }
+                      >
+                        {showPassword ? (
+                          <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path
+                              d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="1.8"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                            <circle
+                              cx="12"
+                              cy="12"
+                              r="3"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="1.8"
+                            />
+                          </svg>
+                        ) : (
+                          <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path
+                              d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="1.8"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                            <circle
+                              cx="12"
+                              cy="12"
+                              r="3"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="1.8"
+                            />
+                            <path
+                              d="M4 4l16 16"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="1.8"
+                              strokeLinecap="round"
+                            />
+                          </svg>
+                        )}
+                      </button>
+                    </div>
                   </div>
 
                   <button
                     className="save-team-button"
                     type="button"
-                    onClick={goToPermissionsStep}
+                    disabled={!canOpenPermissions}
+                    onClick={() => handleStepChange(2)}
                   >
                     Avançar
                   </button>
@@ -541,6 +859,7 @@ function Equipe() {
                                   checked={form.permissions.includes(
                                     permission.code,
                                   )}
+                                  disabled={isPermissionLocked(permission.code)}
                                   onChange={() =>
                                     togglePermission(permission.code)
                                   }
@@ -559,7 +878,7 @@ function Equipe() {
                     <button
                       type="button"
                       className="back-step-button"
-                      onClick={() => setStep(1)}
+                      onClick={() => handleStepChange(1)}
                     >
                       Voltar
                     </button>
@@ -583,67 +902,6 @@ function Equipe() {
         </div>
       )}
 
-      {permissionModalOpen && (
-        <div className="team-modal-overlay" onClick={closePermissionModal}>
-          <section
-            className="team-modal"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="modal-header">
-              <div>
-                <strong>Permissões</strong>
-                <p>{selectedEmployee?.name}</p>
-              </div>
-
-              <button type="button" onClick={closePermissionModal}>
-                ×
-              </button>
-            </div>
-
-            {error && <div className="team-error">{error}</div>}
-
-            <form className="team-form" onSubmit={savePermissionsOnly}>
-              <div className="permissions-list">
-                {Object.entries(permissionGroups).map(
-                  ([groupName, groupPermissions]) => (
-                    <div className="permission-group" key={groupName}>
-                      <h3>{groupName}</h3>
-
-                      <div className="permission-options">
-                        {groupPermissions.map((permission) => (
-                          <label
-                            className="permission-option"
-                            key={permission.code}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={form.permissions.includes(
-                                permission.code,
-                              )}
-                              onChange={() => togglePermission(permission.code)}
-                            />
-
-                            <span>{permission.name}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                  ),
-                )}
-              </div>
-
-              <button
-                className="save-team-button"
-                type="submit"
-                disabled={saving}
-              >
-                {saving ? "Salvando..." : "Salvar permissões"}
-              </button>
-            </form>
-          </section>
-        </div>
-      )}
-
       <section className="team-container">
         <header className="team-header">
           <button
@@ -657,7 +915,6 @@ function Equipe() {
           </button>
 
           <div>
-            <small>Administração</small>
             <h1>Equipe</h1>
           </div>
 
@@ -671,7 +928,7 @@ function Equipe() {
           </button>
         </header>
 
-        {error && !employeeModalOpen && !permissionModalOpen && (
+        {error && !employeeModalOpen && (
           <div className="team-error">{error}</div>
         )}
 
@@ -682,16 +939,18 @@ function Equipe() {
               <h2>{employees.length} funcionários</h2>
             </div>
 
-            <button
-              className="add-team-icon-button"
-              type="button"
-              onClick={openCreateEmployeeModal}
-              aria-label="Adicionar funcionário"
-            >
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M12 5a1 1 0 0 1 1 1v5h5a1 1 0 1 1 0 2h-5v5a1 1 0 1 1-2 0v-5H6a1 1 0 1 1 0-2h5V6a1 1 0 0 1 1-1Z" />
-              </svg>
-            </button>
+            {canCreateEmployee && (
+              <button
+                className="add-team-icon-button"
+                type="button"
+                onClick={openCreateEmployeeModal}
+                aria-label="Adicionar funcionário"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 5a1 1 0 0 1 1 1v5h5a1 1 0 1 1 0 2h-5v5a1 1 0 1 1-2 0v-5H6a1 1 0 1 1 0-2h5V6a1 1 0 0 1 1-1Z" />
+                </svg>
+              </button>
+            )}
           </div>
 
           {employees.length === 0 ? (
@@ -715,40 +974,35 @@ function Equipe() {
                     </div>
                   </div>
 
-                  <div className="team-card-actions">
-                    <button
-                      type="button"
-                      className="icon-action edit-icon"
-                      onClick={() => openEditEmployeeModal(employee)}
-                      aria-label="Editar funcionário"
-                    >
-                      <svg viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M4.75 16.95 16.67 5.03a2.3 2.3 0 0 1 3.25 3.25L8 20.2a1.2 1.2 0 0 1-.55.31l-3.15.78a.75.75 0 0 1-.9-.9l.78-3.15c.05-.21.16-.4.31-.55Zm13-10.86L6.05 17.79l-.39 1.56 1.56-.39 11.7-11.7a.8.8 0 0 0-1.13-1.13Z" />
-                      </svg>
-                    </button>
+                  {(canEditEmployee || canDeleteEmployee) && (
+                    <div className="team-card-actions">
+                      {canEditEmployee && (
+                        <button
+                          type="button"
+                          className="icon-action edit-icon"
+                          onClick={() => openEditEmployeeModal(employee)}
+                          aria-label="Editar funcionário"
+                        >
+                          <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M4.75 16.95 16.67 5.03a2.3 2.3 0 0 1 3.25 3.25L8 20.2a1.2 1.2 0 0 1-.55.31l-3.15.78a.75.75 0 0 1-.9-.9l.78-3.15c.05-.21.16-.4.31-.55Zm13-10.86L6.05 17.79l-.39 1.56 1.56-.39 11.7-11.7a.8.8 0 0 0-1.13-1.13Z" />
+                          </svg>
+                        </button>
+                      )}
 
-                    <button
-                      type="button"
-                      className="icon-action permission-icon"
-                      onClick={() => openPermissionModal(employee)}
-                      aria-label="Editar permissões"
-                    >
-                      <svg viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M12 2.75a.75.75 0 0 1 .42.13l6.5 4.25a.75.75 0 0 1 .33.62v4.45c0 4.2-2.6 7.95-6.51 9.36a2.1 2.1 0 0 1-1.48 0A10.02 10.02 0 0 1 4.75 12.2V7.75a.75.75 0 0 1 .33-.62l6.5-4.25a.75.75 0 0 1 .42-.13Zm0 1.66L6.25 8.17v4.03c0 3.55 2.2 6.72 5.52 7.92.15.05.31.05.46 0a8.52 8.52 0 0 0 5.52-7.92V8.17L12 4.41Zm3.53 5.85a.75.75 0 0 1 0 1.06l-3.85 3.85a.75.75 0 0 1-1.06 0l-2.15-2.15a.75.75 0 0 1 1.06-1.06l1.62 1.62 3.32-3.32a.75.75 0 0 1 1.06 0Z" />
-                      </svg>
-                    </button>
-
-                    <button
-                      type="button"
-                      className="icon-action delete-icon"
-                      onClick={() => deleteEmployee(employee)}
-                      aria-label="Excluir funcionário"
-                    >
-                      <svg viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M9 4.75A2.75 2.75 0 0 1 11.75 2h.5A2.75 2.75 0 0 1 15 4.75h3.25a.75.75 0 0 1 0 1.5H17.5l-.68 12.2A2.75 2.75 0 0 1 14.07 21H9.93a2.75 2.75 0 0 1-2.75-2.55L6.5 6.25h-.75a.75.75 0 0 1 0-1.5H9Z" />
-                      </svg>
-                    </button>
-                  </div>
+                      {canDeleteEmployee && (
+                        <button
+                          type="button"
+                          className="icon-action delete-icon"
+                          onClick={() => deleteEmployee(employee)}
+                          aria-label="Excluir funcionário"
+                        >
+                          <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M9 4.75A2.75 2.75 0 0 1 11.75 2h.5A2.75 2.75 0 0 1 15 4.75h3.25a.75.75 0 0 1 0 1.5H17.5l-.68 12.2A2.75 2.75 0 0 1 14.07 21H9.93a2.75 2.75 0 0 1-2.75-2.55L6.5 6.25h-.75a.75.75 0 0 1 0-1.5H9Z" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </article>
               ))}
             </div>

@@ -72,6 +72,7 @@ async function createTeamTables() {
         name: "Ver dashboard",
         group: "Dashboard",
       },
+
       {
         code: "ver_fila",
         name: "Ver atendimentos",
@@ -93,36 +94,93 @@ async function createTeamTables() {
         group: "Atendimentos",
       },
       {
+        code: "cancelar_atendimento",
+        name: "Cancelar atendimento",
+        group: "Atendimentos",
+      },
+
+      {
         code: "ver_servicos",
         name: "Ver serviços",
         group: "Serviços",
       },
       {
-        code: "gerenciar_servicos",
-        name: "Gerenciar serviços",
+        code: "criar_servico",
+        name: "Criar serviço",
         group: "Serviços",
       },
       {
-        code: "gerenciar_categorias",
-        name: "Gerenciar categorias",
+        code: "editar_servico",
+        name: "Editar serviço",
         group: "Serviços",
       },
+      {
+        code: "excluir_servico",
+        name: "Excluir serviço",
+        group: "Serviços",
+      },
+      {
+        code: "ver_categorias",
+        name: "Ver categorias",
+        group: "Serviços",
+      },
+      {
+        code: "criar_categoria",
+        name: "Criar categoria",
+        group: "Serviços",
+      },
+      {
+        code: "editar_categoria",
+        name: "Editar categoria",
+        group: "Serviços",
+      },
+      {
+        code: "excluir_categoria",
+        name: "Excluir categoria",
+        group: "Serviços",
+      },
+
       {
         code: "ver_equipe",
         name: "Ver equipe",
         group: "Equipe",
       },
       {
-        code: "gerenciar_equipe",
-        name: "Gerenciar equipe",
+        code: "criar_funcionario",
+        name: "Criar funcionário",
         group: "Equipe",
       },
       {
-        code: "alterar_permissoes",
-        name: "Alterar permissões",
+        code: "editar_funcionario",
+        name: "Editar funcionário",
+        group: "Equipe",
+      },
+      {
+        code: "excluir_funcionario",
+        name: "Excluir funcionário",
         group: "Equipe",
       },
     ];
+
+    const allowedCodes = permissions.map((permission) => permission.code);
+
+    await db.query(
+      `
+  DELETE up
+  FROM user_permissions up
+  INNER JOIN permissions p ON up.permission_id = p.id
+  WHERE p.code NOT IN (?)
+  `,
+      [allowedCodes],
+    );
+
+    await db.query(
+      `
+  DELETE FROM permissions
+  WHERE code NOT IN (?)
+  `,
+      [allowedCodes],
+    );
 
     for (const permission of permissions) {
       await db.query(

@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
 import { apiRequest } from "../../services/api";
+import {
+  getSavedPermissions,
+  getSavedRole,
+  hasPermission,
+  loadUserPermissions,
+} from "../../services/permissions";
 import "./atendimentos.css";
 
 function Atendimentos() {
@@ -9,6 +15,11 @@ function Atendimentos() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [servicesMenuOpen, setServicesMenuOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [error, setError] = useState("");
+
+  const [userPermissions, setUserPermissions] = useState(getSavedPermissions());
+  const [userRole, setUserRole] = useState(getSavedRole());
+
   const [filters, setFilters] = useState({
     startDate: "",
     endDate: "",
@@ -16,7 +27,42 @@ function Atendimentos() {
     plate: "",
     customer: "",
   });
-  const [error, setError] = useState("");
+
+  const canViewDashboard = hasPermission("ver_dashboard", userPermissions);
+  const canViewQueue = hasPermission("ver_fila", userPermissions);
+  const canCreateOrder = hasPermission("criar_atendimento", userPermissions);
+  const canEditOrder = hasPermission("editar_atendimento", userPermissions);
+  const canChangeStatus = hasPermission("alterar_status", userPermissions);
+  const canCancelOrder = hasPermission("cancelar_atendimento", userPermissions);
+  const canViewServices = hasPermission("ver_servicos", userPermissions);
+  const canViewCategories = hasPermission("ver_categorias", userPermissions);
+  const canViewTeam = hasPermission("ver_equipe", userPermissions);
+
+  const canViewFinance = userRole === "owner" || userRole === "super_admin";
+
+  function getFirstAllowedPath(permissions, role) {
+    if (role === "owner" || role === "super_admin") {
+      return "/dashboard";
+    }
+
+    if (permissions.includes("ver_dashboard")) {
+      return "/dashboard";
+    }
+
+    if (permissions.includes("ver_fila")) {
+      return "/atendimentos";
+    }
+
+    if (permissions.includes("ver_servicos")) {
+      return "/servicos";
+    }
+
+    if (permissions.includes("ver_equipe")) {
+      return "/equipe";
+    }
+
+    return "/";
+  }
 
   function updateFilter(field, value) {
     setFilters((currentFilters) => ({
@@ -25,27 +71,27 @@ function Atendimentos() {
     }));
   }
 
-  function buildFilterQuery() {
+  function buildFilterQuery(customFilters = filters) {
     const params = new URLSearchParams();
 
-    if (filters.startDate) {
-      params.append("startDate", filters.startDate);
+    if (customFilters.startDate) {
+      params.append("startDate", customFilters.startDate);
     }
 
-    if (filters.endDate) {
-      params.append("endDate", filters.endDate);
+    if (customFilters.endDate) {
+      params.append("endDate", customFilters.endDate);
     }
 
-    if (filters.status && filters.status !== "todos") {
-      params.append("status", filters.status);
+    if (customFilters.status && customFilters.status !== "todos") {
+      params.append("status", customFilters.status);
     }
 
-    if (filters.plate.trim()) {
-      params.append("plate", filters.plate.trim());
+    if (customFilters.plate.trim()) {
+      params.append("plate", customFilters.plate.trim());
     }
 
-    if (filters.customer.trim()) {
-      params.append("customer", filters.customer.trim());
+    if (customFilters.customer.trim()) {
+      params.append("customer", customFilters.customer.trim());
     }
 
     const query = params.toString();
@@ -64,6 +110,10 @@ function Atendimentos() {
   }
 
   async function applyFilters() {
+    if (!canViewQueue) {
+      return;
+    }
+
     try {
       setLoading(true);
       setError("");
@@ -80,6 +130,10 @@ function Atendimentos() {
   }
 
   async function clearFilters() {
+    if (!canViewQueue) {
+      return;
+    }
+
     try {
       setLoading(true);
       setError("");
@@ -94,7 +148,7 @@ function Atendimentos() {
 
       setFilters(cleanFilters);
 
-      const response = await apiRequest("/api/orders");
+      const response = await apiRequest(buildFilterQuery(cleanFilters));
       setOrders(response.orders || []);
       setFilterOpen(false);
     } catch (error) {
@@ -130,6 +184,9 @@ function Atendimentos() {
   function handleLogout() {
     localStorage.removeItem("primegarage_token");
     localStorage.removeItem("primegarage_user");
+    localStorage.removeItem("primegarage_permissions");
+    localStorage.removeItem("primegarage_role");
+
     window.location.href = "/";
   }
 
@@ -137,6 +194,27 @@ function Atendimentos() {
     try {
       setLoading(true);
       setError("");
+
+      const permissionResponse = await loadUserPermissions();
+
+      const currentPermissions = permissionResponse.permissions || [];
+      const currentRole = permissionResponse.role || "";
+
+      setUserPermissions(currentPermissions);
+      setUserRole(currentRole);
+
+      const canAccessQueue =
+        currentRole === "owner" ||
+        currentRole === "super_admin" ||
+        currentPermissions.includes("ver_fila");
+
+      if (!canAccessQueue) {
+        window.location.href = getFirstAllowedPath(
+          currentPermissions,
+          currentRole,
+        );
+        return;
+      }
 
       const response = await apiRequest(buildFilterQuery());
       setOrders(response.orders || []);
@@ -197,64 +275,79 @@ function Atendimentos() {
             </div>
 
             <nav className="side-menu-links">
-              <button
-                type="button"
-                onClick={() => (window.location.href = "/dashboard")}
-              >
-                Dashboard
-              </button>
-
-              <button className="active" type="button">
-                Atendimentos
-              </button>
-
-              <button
-                type="button"
-                onClick={() => (window.location.href = "/equipe")}
-              >
-                Equipe
-              </button>
-              <div className="menu-group">
+              {canViewDashboard && (
                 <button
                   type="button"
-                  className="menu-parent-button"
-                  onClick={() => setServicesMenuOpen(!servicesMenuOpen)}
+                  onClick={() => (window.location.href = "/dashboard")}
                 >
-                  <span>Serviços</span>
-
-                  <svg
-                    className={
-                      servicesMenuOpen ? "submenu-arrow open" : "submenu-arrow"
-                    }
-                    viewBox="0 0 24 24"
-                    aria-hidden="true"
-                  >
-                    <path d="M7.22 9.47a.75.75 0 0 1 1.06 0L12 13.19l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0l-4.25-4.25a.75.75 0 0 1 0-1.06Z" />
-                  </svg>
+                  Dashboard
                 </button>
+              )}
 
-                {servicesMenuOpen && (
-                  <div className="submenu-links">
-                    <button
-                      type="button"
-                      onClick={() => (window.location.href = "/servicos")}
-                    >
-                      Lista de serviços
-                    </button>
+              {canViewQueue && (
+                <button className="active" type="button">
+                  Atendimentos
+                </button>
+              )}
 
-                    <button
-                      type="button"
-                      onClick={() =>
-                        (window.location.href = "/categorias-servicos")
+              {canViewTeam && (
+                <button
+                  type="button"
+                  onClick={() => (window.location.href = "/equipe")}
+                >
+                  Equipe
+                </button>
+              )}
+
+              {canViewServices && (
+                <div className="menu-group">
+                  <button
+                    type="button"
+                    className="menu-parent-button"
+                    onClick={() => setServicesMenuOpen(!servicesMenuOpen)}
+                  >
+                    <span>Serviços</span>
+
+                    <svg
+                      className={
+                        servicesMenuOpen
+                          ? "submenu-arrow open"
+                          : "submenu-arrow"
                       }
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
                     >
-                      Categorias
-                    </button>
-                  </div>
-                )}
-              </div>
-              <button type="button">Financeiro</button>
-              <button type="button">Configurações</button>
+                      <path d="M7.22 9.47a.75.75 0 0 1 1.06 0L12 13.19l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0l-4.25-4.25a.75.75 0 0 1 0-1.06Z" />
+                    </svg>
+                  </button>
+
+                  {servicesMenuOpen && (
+                    <div className="submenu-links">
+                      <button
+                        type="button"
+                        onClick={() => (window.location.href = "/servicos")}
+                      >
+                        Lista de serviços
+                      </button>
+
+                      {canViewCategories && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            (window.location.href = "/categorias-servicos")
+                          }
+                        >
+                          Categorias
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {canViewFinance && <button type="button">Financeiro</button>}
+
+              {canViewFinance && <button type="button">Configurações</button>}
             </nav>
 
             <button
@@ -404,16 +497,18 @@ function Atendimentos() {
             <h2>Status do dia</h2>
           </div>
 
-          <button
-            type="button"
-            className="new-order-icon-button"
-            onClick={() => (window.location.href = "/novo-atendimento")}
-            aria-label="Novo atendimento"
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 5a1 1 0 0 1 1 1v5h5a1 1 0 1 1 0 2h-5v5a1 1 0 1 1-2 0v-5H6a1 1 0 1 1 0-2h5V6a1 1 0 0 1 1-1Z" />
-            </svg>
-          </button>
+          {canCreateOrder && (
+            <button
+              type="button"
+              className="new-order-icon-button"
+              onClick={() => (window.location.href = "/novo-atendimento")}
+              aria-label="Novo atendimento"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 5a1 1 0 0 1 1 1v5h5a1 1 0 1 1 0 2h-5v5a1 1 0 1 1-2 0v-5H6a1 1 0 1 1 0-2h5V6a1 1 0 0 1 1-1Z" />
+              </svg>
+            </button>
+          )}
         </section>
 
         <section className="status-summary">
@@ -451,7 +546,9 @@ function Atendimentos() {
 
                 <button
                   type="button"
-                  className={`filter-icon-button ${hasActiveFilters() ? "active" : ""}`}
+                  className={`filter-icon-button ${
+                    hasActiveFilters() ? "active" : ""
+                  }`}
                   onClick={() => setFilterOpen(true)}
                   aria-label="Filtrar atendimentos"
                 >
@@ -493,7 +590,8 @@ function Atendimentos() {
                             {formatStatus(order.status)}
                           </span>
 
-                          {order.status !== "entregue" &&
+                          {canCancelOrder &&
+                            order.status !== "entregue" &&
                             order.status !== "cancelado" && (
                               <button
                                 type="button"
@@ -552,7 +650,7 @@ function Atendimentos() {
                   )}
 
                   <div className="attendance-card-actions">
-                    {order.status === "na_fila" && (
+                    {canChangeStatus && order.status === "na_fila" && (
                       <button
                         type="button"
                         className="action-start"
@@ -563,7 +661,7 @@ function Atendimentos() {
                       </button>
                     )}
 
-                    {order.status === "em_lavagem" && (
+                    {canChangeStatus && order.status === "em_lavagem" && (
                       <button
                         type="button"
                         className="action-ready"
@@ -574,7 +672,7 @@ function Atendimentos() {
                       </button>
                     )}
 
-                    {order.status === "pronto" && (
+                    {canChangeStatus && order.status === "pronto" && (
                       <button
                         type="button"
                         className="action-delivered"
@@ -585,7 +683,8 @@ function Atendimentos() {
                       </button>
                     )}
 
-                    {order.status !== "entregue" &&
+                    {canEditOrder &&
+                      order.status !== "entregue" &&
                       order.status !== "cancelado" && (
                         <button
                           type="button"

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { apiRequest } from "../../services/api";
 import "./login.css";
+import { loadUserPermissions } from "../../services/permissions";
 
 function Login() {
   const [email, setEmail] = useState("admin@primegarage.com");
@@ -26,6 +27,8 @@ function Login() {
 
       localStorage.setItem("primegarage_token", data.token);
       localStorage.setItem("primegarage_user", JSON.stringify(data.user));
+
+      await loadUserPermissions();
 
       window.location.href = "/dashboard";
     } catch (error) {

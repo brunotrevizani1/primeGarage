@@ -50,19 +50,39 @@ async function createCategory(req, res) {
       });
     }
 
+    const categoryName = name.trim();
+
+    const [existingCategories] = await db.query(
+      `
+      SELECT id
+      FROM service_categories
+      WHERE business_id = ?
+      AND name = ?
+      AND status = 'active'
+      LIMIT 1
+      `,
+      [businessId, categoryName],
+    );
+
+    if (existingCategories.length > 0) {
+      return res.status(400).json({
+        mensagem: "Já existe uma categoria ativa com este nome.",
+      });
+    }
+
     const [result] = await db.query(
       `
       INSERT INTO service_categories (business_id, name, status)
       VALUES (?, ?, 'active')
       `,
-      [businessId, name.trim()],
+      [businessId, categoryName],
     );
 
     res.status(201).json({
       mensagem: "Categoria criada com sucesso.",
       category: {
         id: result.insertId,
-        name: name.trim(),
+        name: categoryName,
       },
     });
   } catch (error) {
@@ -85,14 +105,41 @@ async function updateCategory(req, res) {
       });
     }
 
-    await db.query(
+    const categoryName = name.trim();
+
+    const [existingCategories] = await db.query(
+      `
+      SELECT id
+      FROM service_categories
+      WHERE business_id = ?
+      AND name = ?
+      AND status = 'active'
+      AND id <> ?
+      LIMIT 1
+      `,
+      [businessId, categoryName, id],
+    );
+
+    if (existingCategories.length > 0) {
+      return res.status(400).json({
+        mensagem: "Já existe uma categoria ativa com este nome.",
+      });
+    }
+
+    const [result] = await db.query(
       `
       UPDATE service_categories
       SET name = ?, status = ?
       WHERE id = ? AND business_id = ?
       `,
-      [name.trim(), status || "active", id, businessId],
+      [categoryName, status || "active", id, businessId],
     );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        mensagem: "Categoria não encontrada.",
+      });
+    }
 
     res.json({
       mensagem: "Categoria atualizada com sucesso.",
@@ -104,7 +151,6 @@ async function updateCategory(req, res) {
     });
   }
 }
-
 async function disableCategory(req, res) {
   const connection = await db.getConnection();
 
