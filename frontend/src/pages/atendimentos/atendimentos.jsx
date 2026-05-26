@@ -20,10 +20,15 @@ function Atendimentos() {
   const [userPermissions, setUserPermissions] = useState(getSavedPermissions());
   const [userRole, setUserRole] = useState(getSavedRole());
 
+  const [selectedDate, setSelectedDate] = useState(
+    new Date().toISOString().slice(0, 10),
+  );
+
+  const [dateModalOpen, setDateModalOpen] = useState(false);
+  const [temporaryDate, setTemporaryDate] = useState("");
+
   const [filters, setFilters] = useState({
-    startDate: "",
-    endDate: "",
-    status: "todos",
+    status: "",
     plate: "",
     customer: "",
   });
@@ -39,6 +44,59 @@ function Atendimentos() {
   const canViewTeam = hasPermission("ver_equipe", userPermissions);
 
   const canViewFinance = userRole === "owner" || userRole === "super_admin";
+
+  function formatSelectedDate(date) {
+    const [year, month, day] = date.split("-");
+
+    return `${day}/${month}`;
+  }
+
+  function getWeekdayName(date) {
+    const weekdays = [
+      "Domingo",
+      "Segunda-feira",
+      "Terça-feira",
+      "Quarta-feira",
+      "Quinta-feira",
+      "Sexta-feira",
+      "Sábado",
+    ];
+
+    const currentDate = new Date(`${date}T00:00:00`);
+
+    return weekdays[currentDate.getDay()];
+  }
+
+  function changeSelectedDate(days) {
+    const currentDate = new Date(`${selectedDate}T00:00:00`);
+    currentDate.setDate(currentDate.getDate() + days);
+
+    setSelectedDate(currentDate.toISOString().slice(0, 10));
+  }
+
+  function openDateModal() {
+    setTemporaryDate(selectedDate);
+    setDateModalOpen(true);
+  }
+
+  function confirmSelectedDate() {
+    if (!temporaryDate) {
+      return;
+    }
+
+    setSelectedDate(temporaryDate);
+    setDateModalOpen(false);
+  }
+
+  function getQueueTitle() {
+    const today = new Date().toISOString().slice(0, 10);
+
+    if (selectedDate === today) {
+      return "Fila de hoje";
+    }
+
+    return "Fila do dia";
+  }
 
   function getFirstAllowedPath(permissions, role) {
     if (role === "owner" || role === "super_admin") {
@@ -71,42 +129,28 @@ function Atendimentos() {
     }));
   }
 
-  function buildFilterQuery(customFilters = filters) {
+  function buildFilterQuery() {
     const params = new URLSearchParams();
 
-    if (customFilters.startDate) {
-      params.append("startDate", customFilters.startDate);
+    params.append("date", selectedDate);
+
+    if (filters.status) {
+      params.append("status", filters.status);
     }
 
-    if (customFilters.endDate) {
-      params.append("endDate", customFilters.endDate);
+    if (filters.plate) {
+      params.append("plate", filters.plate);
     }
 
-    if (customFilters.status && customFilters.status !== "todos") {
-      params.append("status", customFilters.status);
+    if (filters.customer) {
+      params.append("customer", filters.customer);
     }
 
-    if (customFilters.plate.trim()) {
-      params.append("plate", customFilters.plate.trim());
-    }
-
-    if (customFilters.customer.trim()) {
-      params.append("customer", customFilters.customer.trim());
-    }
-
-    const query = params.toString();
-
-    return query ? `/api/orders?${query}` : "/api/orders";
+    return `/api/orders?${params.toString()}`;
   }
 
   function hasActiveFilters() {
-    return (
-      filters.startDate ||
-      filters.endDate ||
-      filters.status !== "todos" ||
-      filters.plate.trim() ||
-      filters.customer.trim()
-    );
+    return filters.status || filters.plate || filters.customer;
   }
 
   async function applyFilters() {
@@ -130,25 +174,18 @@ function Atendimentos() {
   }
 
   async function clearFilters() {
-    if (!canViewQueue) {
-      return;
-    }
+    setFilters({
+      status: "",
+      plate: "",
+      customer: "",
+    });
 
     try {
       setLoading(true);
       setError("");
 
-      const cleanFilters = {
-        startDate: "",
-        endDate: "",
-        status: "todos",
-        plate: "",
-        customer: "",
-      };
+      const response = await apiRequest(`/api/orders?date=${selectedDate}`);
 
-      setFilters(cleanFilters);
-
-      const response = await apiRequest(buildFilterQuery(cleanFilters));
       setOrders(response.orders || []);
       setFilterOpen(false);
     } catch (error) {
@@ -167,6 +204,7 @@ function Atendimentos() {
 
   function formatStatus(status) {
     const statusMap = {
+      agendado: "Agendado",
       na_fila: "Na fila",
       em_lavagem: "Lavando",
       pronto: "Pronto",
@@ -194,30 +232,9 @@ function Atendimentos() {
   async function loadOrders() {
     try {
       setLoading(true);
-      setError("");
-
-      const permissionResponse = await loadUserPermissions();
-
-      const currentPermissions = permissionResponse.permissions || [];
-      const currentRole = permissionResponse.role || "";
-
-      setUserPermissions(currentPermissions);
-      setUserRole(currentRole);
-
-      const canAccessQueue =
-        currentRole === "owner" ||
-        currentRole === "super_admin" ||
-        currentPermissions.includes("ver_fila");
-
-      if (!canAccessQueue) {
-        window.location.href = getFirstAllowedPath(
-          currentPermissions,
-          currentRole,
-        );
-        return;
-      }
 
       const response = await apiRequest(buildFilterQuery());
+
       setOrders(response.orders || []);
     } catch (error) {
       setError(error.message);
@@ -245,8 +262,23 @@ function Atendimentos() {
   }
 
   useEffect(() => {
-    loadOrders();
+    async function loadPermissions() {
+      try {
+        const response = await loadUserPermissions();
+
+        setUserPermissions(response.permissions || []);
+        setUserRole(response.role || "");
+      } catch (error) {
+        setError(error.message);
+      }
+    }
+
+    loadPermissions();
   }, []);
+
+  useEffect(() => {
+    loadOrders();
+  }, [selectedDate]);
 
   if (loading) {
     return (
@@ -362,6 +394,54 @@ function Atendimentos() {
         </div>
       )}
 
+      {dateModalOpen && (
+        <div
+          className="date-modal-overlay"
+          onClick={() => setDateModalOpen(false)}
+        >
+          <section
+            className="date-modal"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="date-modal-header">
+              <strong>Escolher data</strong>
+
+              <button type="button" onClick={() => setDateModalOpen(false)}>
+                ×
+              </button>
+            </div>
+
+            <div className="date-modal-body">
+              <label>Data do atendimento</label>
+
+              <input
+                type="date"
+                value={temporaryDate}
+                onChange={(event) => setTemporaryDate(event.target.value)}
+              />
+            </div>
+
+            <div className="date-modal-actions">
+              <button
+                type="button"
+                className="date-modal-cancel"
+                onClick={() => setDateModalOpen(false)}
+              >
+                Cancelar
+              </button>
+
+              <button
+                type="button"
+                className="date-modal-confirm"
+                onClick={confirmSelectedDate}
+              >
+                Ir para data
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+
       {filterOpen && (
         <div className="filter-overlay" onClick={() => setFilterOpen(false)}>
           <section
@@ -380,28 +460,6 @@ function Atendimentos() {
 
             <div className="filter-form">
               <div className="filter-group">
-                <label>Data inicial</label>
-                <input
-                  type="date"
-                  value={filters.startDate}
-                  onChange={(event) =>
-                    updateFilter("startDate", event.target.value)
-                  }
-                />
-              </div>
-
-              <div className="filter-group">
-                <label>Data final</label>
-                <input
-                  type="date"
-                  value={filters.endDate}
-                  onChange={(event) =>
-                    updateFilter("endDate", event.target.value)
-                  }
-                />
-              </div>
-
-              <div className="filter-group">
                 <label>Status</label>
                 <select
                   value={filters.status}
@@ -409,7 +467,7 @@ function Atendimentos() {
                     updateFilter("status", event.target.value)
                   }
                 >
-                  <option value="todos">Todos</option>
+                  <option value="">Todos</option>
                   <option value="na_fila">Na fila</option>
                   <option value="em_lavagem">Lavando</option>
                   <option value="pronto">Pronto</option>
@@ -493,9 +551,42 @@ function Atendimentos() {
         {error && <div className="attendance-error">{error}</div>}
 
         <section className="attendance-tools">
-          <div>
-            <small>Resumo</small>
-            <h2>Status do dia</h2>
+          <div className="date-selector">
+            <div className="date-picker-box">
+              <button
+                type="button"
+                className="date-nav-button"
+                onClick={() => changeSelectedDate(-1)}
+                aria-label="Dia anterior"
+              >
+                ‹
+              </button>
+
+              <button
+                type="button"
+                className="date-center-button"
+                onClick={openDateModal}
+              >
+                <strong className="date-selector-date">
+                  {formatSelectedDate(selectedDate)}
+                </strong>
+
+                <span className="date-separator">-</span>
+
+                <span className="date-weekday">
+                  {getWeekdayName(selectedDate)}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                className="date-nav-button"
+                onClick={() => changeSelectedDate(1)}
+                aria-label="Próximo dia"
+              >
+                ›
+              </button>
+            </div>
           </div>
 
           {canCreateOrder && (
@@ -513,6 +604,11 @@ function Atendimentos() {
         </section>
 
         <section className="status-summary">
+          <article className="summary-box status-agendado">
+            <span>Agendados</span>
+            <strong>{getOrdersByStatus("agendado")}</strong>
+          </article>
+
           <article className="summary-box status-fila">
             <span>Na fila</span>
             <strong>{getOrdersByStatus("na_fila")}</strong>
@@ -543,7 +639,9 @@ function Atendimentos() {
           <div className="section-title">
             <div>
               <div className="title-with-filter">
-                <h2>{hasActiveFilters() ? "Fila filtrada" : "Fila de hoje"}</h2>
+                <div className="queue-title">
+                  <h2>Fila do dia {formatSelectedDate(selectedDate)}</h2>
+                </div>
 
                 <button
                   type="button"
@@ -651,6 +749,17 @@ function Atendimentos() {
                   )}
 
                   <div className="attendance-card-actions">
+                    {canChangeStatus && order.status === "agendado" && (
+                      <button
+                        type="button"
+                        className="action-start"
+                        disabled={updatingId === order.id}
+                        onClick={() => updateStatus(order.id, "na_fila")}
+                      >
+                        Enviar para fila
+                      </button>
+                    )}
+
                     {canChangeStatus && order.status === "na_fila" && (
                       <button
                         type="button"
