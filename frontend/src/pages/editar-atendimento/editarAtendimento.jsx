@@ -11,6 +11,7 @@ function EditarAtendimento() {
   const orderId = window.location.pathname.split("/").pop();
 
   const [services, setServices] = useState([]);
+  const [employees, setEmployees] = useState([]);
   const [hasPayment, setHasPayment] = useState(false);
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(true);
@@ -27,6 +28,8 @@ function EditarAtendimento() {
     vehicleColor: "",
     serviceId: "",
     price: "",
+    scheduledDate: "",
+    responsibleUserId: "",
     notes: "",
   });
 
@@ -165,6 +168,7 @@ function EditarAtendimento() {
       setError("");
 
       const servicesResponse = await apiRequest("/api/services");
+      const employeesResponse = await apiRequest("/api/team/responsibles");
       const orderResponse = await apiRequest(`/api/orders/${orderId}`);
 
       const order = orderResponse.order;
@@ -174,6 +178,7 @@ function EditarAtendimento() {
       }
 
       setServices(servicesResponse.services || []);
+      setEmployees(employeesResponse.employees || []);
       setHasPayment(Boolean(order.has_payment));
       setStatus(order.status);
 
@@ -185,6 +190,10 @@ function EditarAtendimento() {
         vehicleColor: order.vehicle_color || "",
         serviceId: order.service_id || "",
         price: order.price || "",
+        scheduledDate: order.scheduled_date
+          ? order.scheduled_date.slice(0, 10)
+          : new Date().toISOString().slice(0, 10),
+        responsibleUserId: order.responsible_user_id || "",
         notes: order.notes || "",
       });
     } catch (error) {
@@ -239,6 +248,10 @@ function EditarAtendimento() {
           vehicleModel: form.vehicleModel.trim(),
           vehicleColor: form.vehicleColor.trim(),
           serviceId: Number(form.serviceId),
+          scheduledDate: form.scheduledDate,
+          responsibleUserId: form.responsibleUserId
+            ? Number(form.responsibleUserId)
+            : null,
           price: Number(form.price),
           notes: form.notes,
         }),
@@ -422,6 +435,41 @@ function EditarAtendimento() {
                 disabled={status === "entregue" || hasPayment}
                 onChange={(event) => updateField("price", event.target.value)}
               />
+            </div>
+          </div>
+
+          <div className="form-section">
+            <h2>Detalhes do atendimento</h2>
+
+            <div className="form-group">
+              <label>Data do atendimento</label>
+              <input
+                type="date"
+                value={form.scheduledDate}
+                disabled={status !== "agendado" && status !== "na_fila"}
+                onChange={(event) =>
+                  updateField("scheduledDate", event.target.value)
+                }
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Responsável</label>
+              <select
+                value={form.responsibleUserId}
+                disabled={status === "entregue"}
+                onChange={(event) =>
+                  updateField("responsibleUserId", event.target.value)
+                }
+              >
+                <option value="">Decidir depois</option>
+
+                {employees.map((employee) => (
+                  <option key={employee.id} value={employee.id}>
+                    {employee.name}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="form-group">

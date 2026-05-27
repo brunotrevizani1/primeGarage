@@ -322,6 +322,7 @@ async function updateOrder(req, res) {
       vehicleColor,
       serviceId,
       responsibleUserId,
+      scheduledDate,
       price,
       notes,
     } = req.body;
@@ -428,17 +429,19 @@ async function updateOrder(req, res) {
 
     await connection.query(
       `
-      UPDATE service_orders
-      SET 
-        service_id = ?,
-        responsible_user_id = ?,
-        price = ?,
-        notes = ?
-      WHERE id = ? AND business_id = ?
+     UPDATE service_orders
+SET 
+  service_id = ?,
+  responsible_user_id = ?,
+  scheduled_date = ?,
+  price = ?,
+  notes = ?
+WHERE id = ? AND business_id = ?
       `,
       [
         serviceId,
         responsibleUserId || null,
+        scheduledDate || null,
         newPrice,
         notes || null,
         id,
@@ -477,6 +480,7 @@ async function getOrderById(req, res) {
         so.notes,
         so.service_id,
         so.responsible_user_id,
+        so.scheduled_date,
         c.name AS customer_name,
         c.phone AS customer_phone,
         v.plate AS vehicle_plate,

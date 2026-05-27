@@ -88,6 +88,14 @@ function Atendimentos() {
     setDateModalOpen(false);
   }
 
+  function goToTodayFromModal() {
+    const today = new Date().toISOString().slice(0, 10);
+
+    setSelectedDate(today);
+    setTemporaryDate(today);
+    setDateModalOpen(false);
+  }
+
   function getQueueTitle() {
     const today = new Date().toISOString().slice(0, 10);
 
@@ -424,10 +432,10 @@ function Atendimentos() {
             <div className="date-modal-actions">
               <button
                 type="button"
-                className="date-modal-cancel"
-                onClick={() => setDateModalOpen(false)}
+                className="date-modal-today"
+                onClick={goToTodayFromModal}
               >
-                Cancelar
+                Limpar filtro
               </button>
 
               <button
@@ -559,7 +567,7 @@ function Atendimentos() {
                 onClick={() => changeSelectedDate(-1)}
                 aria-label="Dia anterior"
               >
-                ‹
+                <span>‹</span>
               </button>
 
               <button
@@ -584,7 +592,7 @@ function Atendimentos() {
                 onClick={() => changeSelectedDate(1)}
                 aria-label="Próximo dia"
               >
-                ›
+                <span>›</span>
               </button>
             </div>
           </div>
@@ -663,7 +671,7 @@ function Atendimentos() {
 
           {orders.length === 0 ? (
             <div className="empty-attendance">
-              <strong>Nenhum atendimento hoje</strong>
+              <strong>Nenhum atendimento neste dia</strong>
               <p>Quando um veículo for cadastrado, ele aparecerá aqui.</p>
             </div>
           ) : (

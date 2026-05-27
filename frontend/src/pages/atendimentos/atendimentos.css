@@ -923,13 +923,19 @@
   border-radius: 999px;
   background: transparent;
   color: #14211d;
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: 600;
   line-height: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+}
+
+.date-nav-button span {
+  display: block;
+  line-height: 1;
+  transform: translateY(2px);
 }
 
 .date-nav-button:hover {
@@ -949,6 +955,7 @@
   align-items: center;
   gap: 4px;
   cursor: pointer;
+  transform: translateY(1px);
 }
 
 .date-selector-date,
@@ -961,7 +968,7 @@
 }
 
 .date-selector-date {
-  font-size: 1.15rem;
+  font-size: 1.1rem;
   font-weight: 800;
 }
 
@@ -1064,7 +1071,7 @@
   cursor: pointer;
 }
 
-.date-modal-cancel {
+.date-modal-today {
   background: #eef3f0;
   color: #14211d;
 }

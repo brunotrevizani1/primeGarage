@@ -511,6 +511,32 @@ async function getMyPermissions(req, res) {
   }
 }
 
+async function listResponsibles(req, res) {
+  try {
+    const businessId = req.user.business_id;
+
+    const [employees] = await db.query(
+      `
+      SELECT id, name
+      FROM users
+      WHERE business_id = ?
+      AND status = 'active'
+      ORDER BY name ASC
+      `,
+      [businessId],
+    );
+
+    return res.json({
+      employees,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      mensagem: "Erro ao listar responsáveis.",
+      erro: error.message,
+    });
+  }
+}
+
 module.exports = {
   listEmployees,
   createEmployee,
@@ -520,4 +546,5 @@ module.exports = {
   getEmployeePermissions,
   updateEmployeePermissions,
   getMyPermissions,
+  listResponsibles,
 };

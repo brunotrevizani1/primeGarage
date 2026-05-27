@@ -11,6 +11,7 @@ import {
 function NovoAtendimento() {
   const [categories, setCategories] = useState([]);
   const [services, setServices] = useState([]);
+  const [employees, setEmployees] = useState([]);
   const [loadingOptions, setLoadingOptions] = useState(true);
   const [saving, setSaving] = useState(false);
   const [searchingPlate, setSearchingPlate] = useState(false);
@@ -50,8 +51,9 @@ function NovoAtendimento() {
     vehicleColor: "",
     categoryId: "",
     serviceId: "",
-    scheduledDate: new Date().toISOString().slice(0, 10),
     price: "",
+    scheduledDate: new Date().toISOString().slice(0, 10),
+    responsibleUserId: "",
     notes: "",
   });
 
@@ -149,9 +151,10 @@ function NovoAtendimento() {
 
       const categoriesResponse = await apiRequest("/api/service-categories");
       const servicesResponse = await apiRequest("/api/services");
-
+      const employeesResponse = await apiRequest("/api/team/responsibles");
       setCategories(categoriesResponse.categories || []);
       setServices(servicesResponse.services || []);
+      setEmployees(employeesResponse.employees || []);
     } catch (error) {
       setError(error.message);
     } finally {
@@ -297,6 +300,9 @@ function NovoAtendimento() {
           vehicleColor: form.vehicleColor.trim(),
           serviceId: Number(form.serviceId),
           scheduledDate: form.scheduledDate,
+          responsibleUserId: form.responsibleUserId
+            ? Number(form.responsibleUserId)
+            : null,
           price: currencyToNumber(form.price),
           notes: form.notes,
         }),
@@ -493,6 +499,9 @@ function NovoAtendimento() {
                 ))}
               </select>
             </div>
+          </div>
+          <div className="form-section">
+            <h2>Detalhes do atendimento</h2>
 
             <div className="form-group">
               <label>Data do atendimento</label>
@@ -503,6 +512,25 @@ function NovoAtendimento() {
                   updateField("scheduledDate", event.target.value)
                 }
               />
+            </div>
+
+            <div className="form-group">
+              <label>Responsável</label>
+              <select
+                value={form.responsibleUserId}
+                onChange={(event) =>
+                  updateField("responsibleUserId", event.target.value)
+                }
+                disabled={loadingOptions}
+              >
+                <option value="">Decidir depois</option>
+
+                {employees.map((employee) => (
+                  <option key={employee.id} value={employee.id}>
+                    {employee.name}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="form-group">

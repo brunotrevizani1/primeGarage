@@ -9,6 +9,7 @@ const {
   getEmployeePermissions,
   updateEmployeePermissions,
   getMyPermissions,
+  listResponsibles,
 } = require("../controllers/teamController");
 
 const authMiddleware = require("../middlewares/authMiddleware");
@@ -23,6 +24,13 @@ router.get(
   authMiddleware,
   permissionMiddleware(["criar_funcionario", "editar_funcionario"]),
   listPermissions,
+);
+
+router.get(
+  "/responsibles",
+  authMiddleware,
+  permissionMiddleware("criar_atendimento"),
+  listResponsibles,
 );
 
 router.get(
