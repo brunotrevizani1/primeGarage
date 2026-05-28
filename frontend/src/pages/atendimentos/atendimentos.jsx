@@ -20,9 +20,18 @@ function Atendimentos() {
   const [userPermissions, setUserPermissions] = useState(getSavedPermissions());
   const [userRole, setUserRole] = useState(getSavedRole());
 
-  const [selectedDate, setSelectedDate] = useState(
-    new Date().toISOString().slice(0, 10),
-  );
+  function getInitialSelectedDate() {
+    const params = new URLSearchParams(window.location.search);
+    const dateFromUrl = params.get("date");
+
+    if (dateFromUrl) {
+      return dateFromUrl;
+    }
+
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  const [selectedDate, setSelectedDate] = useState(getInitialSelectedDate());
 
   const [dateModalOpen, setDateModalOpen] = useState(false);
   const [temporaryDate, setTemporaryDate] = useState("");
@@ -476,6 +485,7 @@ function Atendimentos() {
                   }
                 >
                   <option value="">Todos</option>
+                  <option value="agendado">Agendado</option>
                   <option value="na_fila">Na fila</option>
                   <option value="em_lavagem">Lavando</option>
                   <option value="pronto">Pronto</option>
@@ -760,7 +770,7 @@ function Atendimentos() {
                     {canChangeStatus && order.status === "agendado" && (
                       <button
                         type="button"
-                        className="action-start"
+                        className="action-schedule"
                         disabled={updatingId === order.id}
                         onClick={() => updateStatus(order.id, "na_fila")}
                       >
@@ -808,7 +818,7 @@ function Atendimentos() {
                           type="button"
                           className="action-edit"
                           onClick={() =>
-                            (window.location.href = `/editar-atendimento/${order.id}`)
+                            (window.location.href = `/editar-atendimento/${order.id}?date=${selectedDate}`)
                           }
                         >
                           Editar

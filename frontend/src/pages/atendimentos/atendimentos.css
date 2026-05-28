@@ -111,22 +111,6 @@
   letter-spacing: -0.05em;
 }
 
-.status-fila {
-  background: linear-gradient(135deg, #4f8df7, #2563eb);
-}
-
-.status-lavando {
-  background: linear-gradient(135deg, #f59e0b, #ea580c);
-}
-
-.status-pronto {
-  background: linear-gradient(135deg, #97b067, #7f9c54);
-}
-
-.status-entregue {
-  background: linear-gradient(135deg, #ef4444, #dc2626);
-}
-
 .attendance-tools {
   display: flex;
   align-items: center;
@@ -289,43 +273,62 @@
   white-space: nowrap;
 }
 
-.status-na_fila {
-  color: #ffffff;
-  background: #2563eb;
+.status-agendado {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
 }
 
-.status-em_lavagem {
-  color: #ffffff;
-  background: #ea580c;
+.status-fila {
+  background: linear-gradient(135deg, #facc15, #eab308);
+}
+
+.status-lavando {
+  background: linear-gradient(135deg, #f59e0b, #f97316);
 }
 
 .status-pronto {
-  color: #ffffff;
-  background: #7f9c54;
+  background: linear-gradient(135deg, #86a45a, #78964f);
 }
 
 .status-entregue {
-  color: #ffffff;
-  background: #dc2626;
-}
-
-.status-agendado {
-  background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+  background: linear-gradient(135deg, #ec4899, #db2777);
 }
 
 .status-cancelado {
-  background:
-    radial-gradient(
-      circle at bottom right,
-      rgba(151, 176, 103, 0.18),
-      transparent 34%
-    ),
-    linear-gradient(135deg, #1f3a34 0%, #2f5249 52%, #263f39 100%);
+  background: linear-gradient(135deg, #ef1f2d, #d71920);
 }
 
-.status-cancelado {
+.status-pill {
   color: #ffffff;
-  background: #2f5249;
+}
+
+.status-pill.status-agendado {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+}
+
+.status-pill.status-na_fila {
+  background: linear-gradient(135deg, #facc15, #eab308);
+}
+
+.status-pill.status-em_lavagem {
+  background: linear-gradient(135deg, #f59e0b, #f97316);
+  color: #ffffff;
+}
+
+.progress-em_lavagem {
+  width: 55%;
+  background: linear-gradient(135deg, #f59e0b, #f97316);
+}
+
+.status-pill.status-pronto {
+  background: linear-gradient(135deg, #86a45a, #78964f);
+}
+
+.status-pill.status-entregue {
+  background: linear-gradient(135deg, #ec4899, #db2777);
+}
+
+.status-pill.status-cancelado {
+  background: linear-gradient(135deg, #ef1f2d, #d71920);
 }
 
 .progress-cancelado {
@@ -348,12 +351,7 @@
 
 .progress-na_fila {
   width: 20%;
-  background: #2563eb;
-}
-
-.progress-em_lavagem {
-  width: 55%;
-  background: #ea580c;
+  background: #eab308;
 }
 
 .progress-pronto {
@@ -363,7 +361,7 @@
 
 .progress-entregue {
   width: 100%;
-  background: #dc2626;
+  background: linear-gradient(135deg, #ec4899, #db2777);
 }
 
 .progress-cancelado {
@@ -425,12 +423,19 @@
   cursor: not-allowed;
 }
 
+.action-schedule {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: #ffffff;
+}
+
 .action-start {
-  background: #2563eb;
+  background: linear-gradient(135deg, #facc15, #eab308);
+  color: #14211d;
 }
 
 .action-ready {
-  background: #ea580c;
+  background: linear-gradient(135deg, #f59e0b, #f97316);
+  color: #ffffff;
 }
 
 .action-delivered {
@@ -438,7 +443,8 @@
 }
 
 .action-edit {
-  background: #64748b;
+  background: #2f5249;
+  color: #ffffff;
 }
 
 .finished-label,

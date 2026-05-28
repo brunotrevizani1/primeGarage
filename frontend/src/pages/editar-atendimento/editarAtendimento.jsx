@@ -7,6 +7,19 @@ import {
   loadUserPermissions,
 } from "../../services/permissions";
 
+function getReturnDate() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get("date");
+}
+
+function goBackToAttendances() {
+  const returnDate = getReturnDate();
+
+  window.location.href = returnDate
+    ? `/atendimentos?date=${returnDate}`
+    : "/atendimentos";
+}
+
 function EditarAtendimento() {
   const orderId = window.location.pathname.split("/").pop();
 
@@ -257,7 +270,11 @@ function EditarAtendimento() {
         }),
       });
 
-      window.location.href = "/atendimentos";
+      const returnDate = getReturnDate();
+
+      window.location.href = returnDate
+        ? `/atendimentos?date=${returnDate}`
+        : "/atendimentos";
     } catch (error) {
       setError(error.message);
 
@@ -320,9 +337,10 @@ function EditarAtendimento() {
         <header className="edit-order-header">
           <button
             type="button"
-            onClick={() => (window.location.href = "/atendimentos")}
+            className="back-button"
+            onClick={goBackToAttendances}
           >
-            ←
+            ‹
           </button>
 
           <div>

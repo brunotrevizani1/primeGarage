@@ -13,6 +13,7 @@ function Dashboard() {
   const [business, setBusiness] = useState(null);
   const [finance, setFinance] = useState(null);
   const [orders, setOrders] = useState([]);
+  const [todaySchedules, setTodaySchedules] = useState(0);
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const [servicesMenuOpen, setServicesMenuOpen] = useState(false);
@@ -36,6 +37,19 @@ function Dashboard() {
   const canViewTeam = hasPermission("ver_equipe", userPermissions);
 
   const canViewFinance = userRole === "owner" || userRole === "super_admin";
+
+  async function loadTodaySchedules() {
+    const today = new Date().toISOString().slice(0, 10);
+
+    const response = await apiRequest(`/api/orders?date=${today}`);
+    const todayOrders = response.orders || [];
+
+    const scheduledCount = todayOrders.filter(
+      (order) => order.status === "agendado",
+    ).length;
+
+    setTodaySchedules(scheduledCount);
+  }
 
   function getFirstAllowedPath(permissions, role) {
     if (role === "owner" || role === "super_admin") {
@@ -158,19 +172,15 @@ function Dashboard() {
 
   function formatStatus(status) {
     const statusMap = {
+      agendado: "Agendado",
       na_fila: "Na fila",
       em_lavagem: "Lavando",
-      em_acabamento: "Acabamento",
       pronto: "Pronto",
       entregue: "Entregue",
       cancelado: "Cancelado",
     };
 
     return statusMap[status] || status;
-  }
-
-  function getOrdersByStatus(status) {
-    return orders.filter((order) => order.status === status).length;
   }
 
   async function handleLogout() {
@@ -231,9 +241,12 @@ function Dashboard() {
       }
 
       if (canAccessQueue) {
+        await loadTodaySchedules();
+
         const ordersResponse = await apiRequest(buildFilterQuery());
         setOrders(ordersResponse.orders || []);
       } else {
+        setTodaySchedules(0);
         setOrders([]);
       }
     } catch (error) {
@@ -413,6 +426,7 @@ function Dashboard() {
                   }
                 >
                   <option value="todos">Todos</option>
+                  <option value="agendado">Agendado</option>
                   <option value="na_fila">Na fila</option>
                   <option value="em_lavagem">Lavando</option>
                   <option value="pronto">Pronto</option>
@@ -500,30 +514,18 @@ function Dashboard() {
 
         {canViewQueue ? (
           <>
-            <section className="stats-grid">
-              <article className="stat-card status-fila">
-                <span>Na fila</span>
-                <strong>{getOrdersByStatus("na_fila")}</strong>
-                <p>Aguardando atendimento</p>
-              </article>
-
-              <article className="stat-card status-lavando">
-                <span>Lavando</span>
-                <strong>{getOrdersByStatus("em_lavagem")}</strong>
-                <p>Em andamento</p>
-              </article>
-
-              <article className="stat-card status-pronto">
-                <span>Prontos</span>
-                <strong>{getOrdersByStatus("pronto")}</strong>
-                <p>Finalizados</p>
-              </article>
-
-              <article className="stat-card status-entregue">
-                <span>Entregues</span>
-                <strong>{getOrdersByStatus("entregue")}</strong>
-                <p>Concluídos hoje</p>
-              </article>
+            <section className="dashboard-summary">
+              <button
+                type="button"
+                className="dashboard-schedule-card"
+                onClick={() => (window.location.href = "/atendimentos")}
+              >
+                <div>
+                  <span>Agendamentos de hoje</span>
+                  <strong>{todaySchedules}</strong>
+                  <p>Atendimentos marcados para hoje</p>
+                </div>
+              </button>
             </section>
 
             <section className="queue-section">
