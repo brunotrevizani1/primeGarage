@@ -6,14 +6,16 @@ async function createServiceTables() {
       CREATE TABLE IF NOT EXISTS services (
         id INT AUTO_INCREMENT PRIMARY KEY,
         business_id INT NOT NULL,
+        category_id INT NOT NULL,
         name VARCHAR(150) NOT NULL,
         description TEXT,
         price DECIMAL(10,2) NOT NULL,
-        duration_minutes INT,
+        duration_minutes INT NOT NULL,
         image_url VARCHAR(255),
         status ENUM('active', 'inactive') DEFAULT 'active',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (business_id) REFERENCES businesses(id)
+        FOREIGN KEY (business_id) REFERENCES businesses(id),
+        FOREIGN KEY (category_id) REFERENCES service_categories(id)
       )
     `);
 

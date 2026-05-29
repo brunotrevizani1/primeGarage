@@ -19,9 +19,9 @@ async function createService(req, res) {
       });
     }
 
-    if (!category_id || !name || !price) {
+    if (!category_id || !name || !price || !duration_minutes) {
       return res.status(400).json({
-        mensagem: "Categoria, nome e preço são obrigatórios.",
+        mensagem: "Categoria, nome, preço e duração são obrigatórios.",
       });
     }
 
@@ -52,7 +52,7 @@ async function createService(req, res) {
         name.trim(),
         description || null,
         price,
-        duration_minutes || null,
+        Number(duration_minutes),
         image_url || null,
       ],
     );
@@ -127,9 +127,9 @@ async function updateService(req, res) {
       status,
     } = req.body;
 
-    if (!category_id || !name || !price) {
+    if (!category_id || !name || !price || !duration_minutes) {
       return res.status(400).json({
-        mensagem: "Categoria, nome e preço são obrigatórios.",
+        mensagem: "Categoria, nome, preço e duração são obrigatórios.",
       });
     }
 
@@ -166,7 +166,7 @@ async function updateService(req, res) {
         name.trim(),
         description || null,
         price,
-        duration_minutes || null,
+        Number(duration_minutes),
         image_url || null,
         status || "active",
         id,

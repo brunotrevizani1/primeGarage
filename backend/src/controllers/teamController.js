@@ -80,6 +80,10 @@ function normalizePermissions(permissions = []) {
     normalized.add("ver_equipe");
   }
 
+  if (normalized.has("editar_agenda")) {
+    normalized.add("ver_agenda");
+  }
+
   return Array.from(normalized);
 }
 

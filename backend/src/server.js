@@ -16,6 +16,7 @@ const vehicleRoutes = require("./routes/vehicleRoutes");
 const serviceCategoryRoutes = require("./routes/serviceCategoryRoutes");
 const teamRoutes = require("./routes/teamRoutes");
 const cookieParser = require("cookie-parser");
+const scheduleRoutes = require("./routes/scheduleRoutes");
 
 const app = express();
 app.use(
@@ -38,6 +39,7 @@ app.use("/api/finance", financeRoutes);
 app.use("/api/vehicles", vehicleRoutes);
 app.use("/api/service-categories", serviceCategoryRoutes);
 app.use("/api/team", teamRoutes);
+app.use("/api/schedule", scheduleRoutes);
 
 app.get("/", (req, res) => {
   res.send("API PrimeGarage funcionando!");

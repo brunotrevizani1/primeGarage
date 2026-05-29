@@ -8,6 +8,7 @@ import Servicos from "./pages/servicos/servicos";
 import CategoriasServicos from "./pages/categorias-servicos/categoriasServicos";
 import Equipe from "./pages/equipe/equipe";
 import { apiRequest } from "./services/api";
+import Agenda from "./pages/agenda/agenda";
 
 function App() {
   const path = window.location.pathname;
@@ -47,6 +48,7 @@ function App() {
   if (path === "/equipe") return <Equipe />;
   if (path.startsWith("/editar-atendimento/")) return <EditarAtendimento />;
   if (path === "/servicos") return <Servicos />;
+  if (path === "/agenda") return <Agenda />;
 
   return <Login />;
 }

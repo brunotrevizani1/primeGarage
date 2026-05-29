@@ -20,6 +20,7 @@ function Servicos() {
   const [editingService, setEditingService] = useState(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [agendaMenuOpen, setAgendaMenuOpen] = useState(false);
 
   const [userPermissions, setUserPermissions] = useState(getSavedPermissions());
   const [userRole, setUserRole] = useState(getSavedRole());
@@ -40,6 +41,7 @@ function Servicos() {
   const canDeleteService = hasPermission("excluir_servico", userPermissions);
   const canViewCategories = hasPermission("ver_categorias", userPermissions);
   const canViewTeam = hasPermission("ver_equipe", userPermissions);
+  const canViewAgenda = hasPermission("ver_agenda", userPermissions);
 
   const canViewFinance = userRole === "owner" || userRole === "super_admin";
 
@@ -262,6 +264,7 @@ function Servicos() {
     if (!serviceForm.category_id) missingFields.push("categoria");
     if (!serviceForm.name.trim()) missingFields.push("nome do serviço");
     if (!serviceForm.price) missingFields.push("preço");
+    if (!serviceForm.duration_minutes) missingFields.push("duração média");
 
     if (missingFields.length === 0) return "";
 
@@ -414,6 +417,50 @@ function Servicos() {
                 >
                   Atendimentos
                 </button>
+              )}
+
+              {canViewAgenda && (
+                <div className="menu-group">
+                  <button
+                    type="button"
+                    className="menu-parent-button"
+                    onClick={() => setAgendaMenuOpen(!agendaMenuOpen)}
+                  >
+                    <span>Agenda</span>
+
+                    <svg
+                      className={
+                        agendaMenuOpen ? "submenu-arrow open" : "submenu-arrow"
+                      }
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                    >
+                      <path d="M7.22 9.47a.75.75 0 0 1 1.06 0L12 13.19l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0l-4.25-4.25a.75.75 0 0 1 0-1.06Z" />
+                    </svg>
+                  </button>
+
+                  {agendaMenuOpen && (
+                    <div className="submenu-links">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          (window.location.href = "/agenda?tab=hours")
+                        }
+                      >
+                        Horários de funcionamento
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          (window.location.href = "/agenda?tab=blocks")
+                        }
+                      >
+                        Bloqueios de agenda
+                      </button>
+                    </div>
+                  )}
+                </div>
               )}
 
               {canViewTeam && (
