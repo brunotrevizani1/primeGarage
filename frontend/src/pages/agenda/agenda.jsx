@@ -9,13 +9,13 @@ import {
 import "./agenda.css";
 
 const weekDays = [
-  { weekday: 0, label: "Domingo" },
-  { weekday: 1, label: "Segunda-feira" },
-  { weekday: 2, label: "Terça-feira" },
-  { weekday: 3, label: "Quarta-feira" },
-  { weekday: 4, label: "Quinta-feira" },
-  { weekday: 5, label: "Sexta-feira" },
-  { weekday: 6, label: "Sábado" },
+  { weekday: 1, label: "Segunda-feira", short: "SEG" },
+  { weekday: 2, label: "Terça-feira", short: "TER" },
+  { weekday: 3, label: "Quarta-feira", short: "QUA" },
+  { weekday: 4, label: "Quinta-feira", short: "QUI" },
+  { weekday: 5, label: "Sexta-feira", short: "SEX" },
+  { weekday: 6, label: "Sábado", short: "SAB" },
+  { weekday: 0, label: "Domingo", short: "DOM" },
 ];
 
 function toBoolean(value) {
@@ -40,6 +40,7 @@ function Agenda() {
   const [error, setError] = useState("");
   const [agendaMenuOpen, setAgendaMenuOpen] = useState(true);
   const [activeAgendaTab, setActiveAgendaTab] = useState(getInitialAgendaTab());
+  const [selectedWorkingWeekday, setSelectedWorkingWeekday] = useState(1);
 
   const [userPermissions, setUserPermissions] = useState(getSavedPermissions());
   const [userRole, setUserRole] = useState(getSavedRole());
@@ -293,6 +294,22 @@ function Agenda() {
 
   const isFullDayBlock = toBoolean(blockForm.is_full_day);
 
+  const selectedWorkingDay = workingHours.find(
+    (item) => Number(item.weekday) === Number(selectedWorkingWeekday),
+  );
+
+  const selectedWeekDayInfo = weekDays.find(
+    (item) => Number(item.weekday) === Number(selectedWorkingWeekday),
+  );
+
+  const selectedIsOpen = selectedWorkingDay
+    ? toBoolean(selectedWorkingDay.is_open)
+    : false;
+
+  const selectedHasLunchBreak = selectedWorkingDay
+    ? toBoolean(selectedWorkingDay.has_lunch_break)
+    : false;
+
   return (
     <main className="agenda-page">
       {menuOpen && (
@@ -455,7 +472,6 @@ function Agenda() {
 
           <div>
             <h1>Agenda</h1>
-            <p>Configure funcionamento e bloqueios</p>
           </div>
 
           <button
@@ -479,137 +495,150 @@ function Agenda() {
               </div>
             </div>
 
-            <div className="working-hours-list">
+            <div className="weekday-tabs">
               {weekDays.map((weekDay) => {
                 const dayConfig = workingHours.find(
                   (item) => Number(item.weekday) === Number(weekDay.weekday),
                 );
 
-                if (!dayConfig) return null;
-
-                const isOpen = toBoolean(dayConfig.is_open);
-                const hasLunchBreak = toBoolean(dayConfig.has_lunch_break);
+                const isOpen = dayConfig ? toBoolean(dayConfig.is_open) : false;
 
                 return (
-                  <article className="working-day-card" key={weekDay.weekday}>
-                    <div className="working-day-header">
-                      <div>
-                        <strong>{weekDay.label}</strong>
-                        <span>{isOpen ? "Aberto" : "Fechado"}</span>
-                      </div>
+                  <button
+                    key={weekDay.weekday}
+                    type="button"
+                    className={
+                      Number(selectedWorkingWeekday) === Number(weekDay.weekday)
+                        ? "weekday-tab active"
+                        : "weekday-tab"
+                    }
+                    onClick={() => setSelectedWorkingWeekday(weekDay.weekday)}
+                  >
+                    <strong>{weekDay.short}</strong>
+                    <span>{isOpen ? "Aberto" : "Fechado"}</span>
+                  </button>
+                );
+              })}
+            </div>
 
-                      <label className="switch">
+            {selectedWorkingDay && (
+              <article className="working-day-card selected-day-card">
+                <div className="working-day-header">
+                  <div>
+                    <strong>{selectedWeekDayInfo?.label}</strong>
+                    <span>{selectedIsOpen ? "Aberto" : "Fechado"}</span>
+                  </div>
+
+                  <label className="switch">
+                    <input
+                      type="checkbox"
+                      checked={selectedIsOpen}
+                      disabled={!canEditAgenda}
+                      onChange={(event) =>
+                        updateWorkingHour(
+                          selectedWorkingWeekday,
+                          "is_open",
+                          event.target.checked,
+                        )
+                      }
+                    />
+                    <span></span>
+                  </label>
+                </div>
+
+                {selectedIsOpen && (
+                  <>
+                    <div className="time-grid">
+                      <div className="form-group">
+                        <label>Início</label>
                         <input
-                          type="checkbox"
-                          checked={isOpen}
+                          type="time"
+                          value={selectedWorkingDay.open_time || ""}
                           disabled={!canEditAgenda}
                           onChange={(event) =>
                             updateWorkingHour(
-                              weekDay.weekday,
-                              "is_open",
+                              selectedWorkingWeekday,
+                              "open_time",
+                              event.target.value,
+                            )
+                          }
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label>Fim</label>
+                        <input
+                          type="time"
+                          value={selectedWorkingDay.close_time || ""}
+                          disabled={!canEditAgenda}
+                          onChange={(event) =>
+                            updateWorkingHour(
+                              selectedWorkingWeekday,
+                              "close_time",
+                              event.target.value,
+                            )
+                          }
+                        />
+                      </div>
+                    </div>
+
+                    <div className="lunch-row">
+                      <label>
+                        <input
+                          type="checkbox"
+                          checked={selectedHasLunchBreak}
+                          disabled={!canEditAgenda}
+                          onChange={(event) =>
+                            updateWorkingHour(
+                              selectedWorkingWeekday,
+                              "has_lunch_break",
                               event.target.checked,
                             )
                           }
                         />
-                        <span></span>
+                        Possui horário de almoço
                       </label>
                     </div>
 
-                    {isOpen && (
-                      <>
-                        <div className="time-grid">
-                          <div className="form-group">
-                            <label>Início</label>
-                            <input
-                              type="time"
-                              value={dayConfig.open_time || ""}
-                              disabled={!canEditAgenda}
-                              onChange={(event) =>
-                                updateWorkingHour(
-                                  weekDay.weekday,
-                                  "open_time",
-                                  event.target.value,
-                                )
-                              }
-                            />
-                          </div>
-
-                          <div className="form-group">
-                            <label>Fim</label>
-                            <input
-                              type="time"
-                              value={dayConfig.close_time || ""}
-                              disabled={!canEditAgenda}
-                              onChange={(event) =>
-                                updateWorkingHour(
-                                  weekDay.weekday,
-                                  "close_time",
-                                  event.target.value,
-                                )
-                              }
-                            />
-                          </div>
+                    {selectedHasLunchBreak && (
+                      <div className="time-grid">
+                        <div className="form-group">
+                          <label>Início almoço</label>
+                          <input
+                            type="time"
+                            value={selectedWorkingDay.lunch_start || ""}
+                            disabled={!canEditAgenda}
+                            onChange={(event) =>
+                              updateWorkingHour(
+                                selectedWorkingWeekday,
+                                "lunch_start",
+                                event.target.value,
+                              )
+                            }
+                          />
                         </div>
 
-                        <div className="lunch-row">
-                          <label>
-                            <input
-                              type="checkbox"
-                              checked={hasLunchBreak}
-                              disabled={!canEditAgenda}
-                              onChange={(event) =>
-                                updateWorkingHour(
-                                  weekDay.weekday,
-                                  "has_lunch_break",
-                                  event.target.checked,
-                                )
-                              }
-                            />
-                            Possui horário de almoço
-                          </label>
+                        <div className="form-group">
+                          <label>Fim almoço</label>
+                          <input
+                            type="time"
+                            value={selectedWorkingDay.lunch_end || ""}
+                            disabled={!canEditAgenda}
+                            onChange={(event) =>
+                              updateWorkingHour(
+                                selectedWorkingWeekday,
+                                "lunch_end",
+                                event.target.value,
+                              )
+                            }
+                          />
                         </div>
-
-                        {hasLunchBreak && (
-                          <div className="time-grid">
-                            <div className="form-group">
-                              <label>Início almoço</label>
-                              <input
-                                type="time"
-                                value={dayConfig.lunch_start || ""}
-                                disabled={!canEditAgenda}
-                                onChange={(event) =>
-                                  updateWorkingHour(
-                                    weekDay.weekday,
-                                    "lunch_start",
-                                    event.target.value,
-                                  )
-                                }
-                              />
-                            </div>
-
-                            <div className="form-group">
-                              <label>Fim almoço</label>
-                              <input
-                                type="time"
-                                value={dayConfig.lunch_end || ""}
-                                disabled={!canEditAgenda}
-                                onChange={(event) =>
-                                  updateWorkingHour(
-                                    weekDay.weekday,
-                                    "lunch_end",
-                                    event.target.value,
-                                  )
-                                }
-                              />
-                            </div>
-                          </div>
-                        )}
-                      </>
+                      </div>
                     )}
-                  </article>
-                );
-              })}
-            </div>
+                  </>
+                )}
+              </article>
+            )}
 
             {canEditAgenda && (
               <button
