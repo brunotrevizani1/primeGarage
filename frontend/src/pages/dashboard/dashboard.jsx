@@ -20,6 +20,7 @@ function Dashboard() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [error, setError] = useState("");
   const [agendaMenuOpen, setAgendaMenuOpen] = useState(false);
+  const [settingsMenuOpen, setSettingsMenuOpen] = useState(false);
 
   const [userPermissions, setUserPermissions] = useState(getSavedPermissions());
   const [userRole, setUserRole] = useState(getSavedRole());
@@ -30,6 +31,11 @@ function Dashboard() {
     status: "todos",
     plate: "",
   });
+
+  const canManageSettings = hasPermission(
+    "gerenciar_configuracoes",
+    userPermissions,
+  );
 
   const canViewDashboard = hasPermission("ver_dashboard", userPermissions);
   const canViewQueue = hasPermission("ver_fila", userPermissions);
@@ -410,7 +416,51 @@ function Dashboard() {
 
               {canViewFinance && <button type="button">Financeiro</button>}
 
-              {canViewFinance && <button type="button">Configurações</button>}
+              {canManageSettings && (
+                <div className="menu-group">
+                  <button
+                    type="button"
+                    className="menu-parent-button"
+                    onClick={() => setSettingsMenuOpen(!settingsMenuOpen)}
+                  >
+                    <span>Configurações</span>
+
+                    <svg
+                      className={
+                        settingsMenuOpen
+                          ? "submenu-arrow open"
+                          : "submenu-arrow"
+                      }
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                    >
+                      <path d="M7.22 9.47a.75.75 0 0 1 1.06 0L12 13.19l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0l-4.25-4.25a.75.75 0 0 1 0-1.06Z" />
+                    </svg>
+                  </button>
+
+                  {settingsMenuOpen && (
+                    <div className="submenu-links">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          (window.location.href = "/configuracoes?tab=initial")
+                        }
+                      >
+                        Informações iniciais
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          (window.location.href = "/configuracoes?tab=location")
+                        }
+                      >
+                        Localização
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
             </nav>
 
             <button

@@ -208,9 +208,13 @@
   cursor: not-allowed;
 }
 
-.lunch-row,
+.lunch-row {
+  margin-top: 12px;
+}
+
 .full-day-row {
   margin-top: 12px;
+  margin-bottom: 12px;
 }
 
 .lunch-row label,
@@ -265,11 +269,11 @@
 
 .block-card {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
   border: 1px solid #edf1ee;
-  border-radius: 18px;
+  border-radius: 20px;
   padding: 14px;
   background: #ffffff;
 }
@@ -277,21 +281,23 @@
 .block-card strong {
   display: block;
   color: #14211d;
-  font-size: 0.95rem;
+  font-size: 1rem;
+  line-height: 1.2;
 }
 
 .block-card span {
   display: block;
-  color: #64716d;
-  font-size: 0.82rem;
-  font-weight: 800;
-  margin-top: 3px;
+  color: #2f5249;
+  font-size: 0.84rem;
+  font-weight: 900;
+  margin-top: 4px;
 }
 
 .block-card p {
   color: #7b8b85;
   font-size: 0.82rem;
-  margin-top: 4px;
+  margin-top: 6px;
+  line-height: 1.35;
 }
 
 .block-card button {
@@ -306,7 +312,6 @@
   font-weight: 900;
   cursor: pointer;
 }
-
 .empty-blocks {
   background: #f8faf9;
   border-radius: 18px;
@@ -572,4 +577,50 @@
 
 .selected-day-card {
   margin-top: 0;
+}
+
+.blocks-list-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 18px 0 12px;
+}
+
+.blocks-list-header h3 {
+  color: #14211d;
+  font-size: 1rem;
+  letter-spacing: -0.03em;
+}
+
+.blocks-list-header p {
+  color: #64716d;
+  font-size: 0.82rem;
+  margin-top: 3px;
+}
+
+.blocks-list-header span {
+  color: #5e6b66;
+  background: #f1f4f2;
+  padding: 7px 9px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.block-card-main {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.block-type-badge {
+  width: fit-content;
+  padding: 6px 9px;
+  border-radius: 999px;
+  background: #dbe7df;
+  color: #2f5249;
+  font-size: 0.7rem;
+  font-weight: 900;
 }

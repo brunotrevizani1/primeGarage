@@ -17,7 +17,7 @@ function CategoriasServicos() {
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
   const [categoryName, setCategoryName] = useState("");
-  const [saving, setSaving] = useState(false);
+  const [saving, setSavinStateg] = useState(false);
   const [error, setError] = useState("");
   const [agendaMenuOpen, setAgendaMenuOpen] = useState(false);
 
@@ -371,7 +371,14 @@ function CategoriasServicos() {
 
               {canViewFinance && <button type="button">Financeiro</button>}
 
-              {canViewFinance && <button type="button">Configurações</button>}
+              {hasPermission("gerenciar_configuracoes", userPermissions) && (
+                <button
+                  type="button"
+                  onClick={() => (window.location.href = "/configuracoes")}
+                >
+                  Configurações
+                </button>
+              )}
             </nav>
 
             <button

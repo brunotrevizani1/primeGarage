@@ -1,0 +1,322 @@
+.customer-category-page {
+  min-height: 100vh;
+  background:
+    radial-gradient(
+      circle at top right,
+      rgba(47, 82, 73, 0.14),
+      transparent 34%
+    ),
+    linear-gradient(180deg, #f4f6f5 0%, #edf1ee 100%);
+  padding: 14px;
+}
+
+.customer-category-app {
+  width: 100%;
+  max-width: 430px;
+  min-height: calc(100vh - 28px);
+  margin: 0 auto;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 12px;
+  position: relative;
+}
+
+.customer-category-back-floating {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 2;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #14211d;
+  font-size: 2rem;
+  line-height: 1;
+  box-shadow: 0 10px 24px rgba(20, 33, 29, 0.08);
+  cursor: pointer;
+}
+
+.customer-category-hero {
+  background:
+    radial-gradient(
+      circle at top right,
+      rgba(151, 176, 103, 0.14),
+      transparent 34%
+    ),
+    #ffffff;
+  border-radius: 30px;
+  padding: 42px 18px 20px;
+  box-shadow: 0 16px 42px rgba(20, 33, 29, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  overflow: hidden;
+  position: relative;
+}
+
+.customer-category-hero::after {
+  content: "";
+  width: 135px;
+  height: 135px;
+  border-radius: 50%;
+  background: rgba(47, 82, 73, 0.07);
+  position: absolute;
+  left: -62px;
+  bottom: -70px;
+}
+
+.customer-category-logo-large {
+  width: 82px;
+  height: 82px;
+  border-radius: 24px;
+  background: #dbe7df;
+  color: #2f5249;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-shadow: 0 12px 26px rgba(20, 33, 29, 0.1);
+  position: relative;
+  z-index: 1;
+  margin-bottom: 10px;
+}
+
+.customer-category-logo-large img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.customer-category-logo-large strong {
+  font-size: 2.2rem;
+  font-weight: 900;
+}
+
+.customer-category-business-name {
+  color: #64716d;
+  font-size: 0.82rem;
+  font-weight: 900;
+  margin-bottom: 10px;
+  position: relative;
+  z-index: 1;
+}
+
+.customer-category-hero h1 {
+  color: #14211d;
+  font-size: 1.78rem;
+  line-height: 1.03;
+  letter-spacing: -0.06em;
+  position: relative;
+  z-index: 1;
+}
+
+.customer-category-list {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.customer-category-card {
+  width: 100%;
+  min-height: 66px;
+  border: none;
+  border-radius: 22px;
+  background:
+    radial-gradient(
+      circle at top right,
+      rgba(47, 82, 73, 0.07),
+      transparent 36%
+    ),
+    #ffffff;
+  padding: 13px 15px;
+  box-shadow: 0 10px 24px rgba(20, 33, 29, 0.065);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  position: relative;
+}
+
+.customer-category-card::before {
+  content: "";
+  width: 5px;
+  height: 44px;
+  border-radius: 999px;
+  background: #2f5249;
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.customer-category-card:active {
+  transform: scale(0.985);
+}
+
+.customer-category-card span {
+  display: block;
+  color: #7b8b85;
+  font-size: 0.7rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 5px;
+}
+
+.customer-category-card strong {
+  display: block;
+  color: #14211d;
+  font-size: 1.02rem;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+}
+
+.customer-category-arrow {
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  border-radius: 13px;
+  background: #dbe7df;
+  color: #2f5249;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.customer-category-arrow svg {
+  width: 22px;
+  height: 22px;
+  fill: currentColor;
+}
+
+.customer-category-empty,
+.customer-category-loading,
+.customer-category-error-card {
+  width: 100%;
+  background: #ffffff;
+  border-radius: 26px;
+  padding: 24px;
+  text-align: center;
+  box-shadow: 0 20px 50px rgba(20, 33, 29, 0.1);
+}
+
+.customer-category-empty strong,
+.customer-category-error-card strong {
+  display: block;
+  color: #14211d;
+  font-size: 1.05rem;
+  margin-bottom: 8px;
+}
+
+.customer-category-empty p,
+.customer-category-error-card p,
+.customer-category-loading p {
+  color: #64716d;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.customer-category-error-card button {
+  width: 100%;
+  height: 48px;
+  border: none;
+  border-radius: 16px;
+  background: #2f5249;
+  color: #ffffff;
+  font-weight: 900;
+  margin-top: 16px;
+  cursor: pointer;
+}
+
+.customer-category-loading {
+  max-width: 380px;
+  margin: 120px auto 0;
+  color: #64716d;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.customer-category-loading-circle {
+  width: 42px;
+  height: 42px;
+  border: 4px solid rgba(47, 82, 73, 0.18);
+  border-top-color: #2f5249;
+  border-radius: 50%;
+  animation: customerCategorySpin 0.8s linear infinite;
+}
+
+.customer-category-footer {
+  color: #7b8b85;
+  text-align: center;
+  padding: 4px 10px 2px;
+}
+
+.customer-category-step-text {
+  color: #2f5249;
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-align: center;
+  margin-top: 2px;
+}
+
+.customer-category-footer {
+  color: #7b8b85;
+  font-size: 0.76rem;
+  line-height: 1.35;
+  text-align: center;
+  padding: 2px 10px 2px;
+}
+
+@keyframes customerCategorySpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 380px) {
+  .customer-category-page {
+    padding: 10px;
+  }
+
+  .customer-category-app {
+    min-height: calc(100vh - 20px);
+  }
+
+  .customer-category-back-floating {
+    top: 12px;
+    left: 12px;
+  }
+
+  .customer-category-hero {
+    border-radius: 30px;
+    padding: 54px 18px 28px;
+  }
+
+  .customer-category-logo-large {
+    width: 94px;
+    height: 94px;
+    border-radius: 28px;
+  }
+
+  .customer-category-hero h1 {
+    font-size: 1.9rem;
+  }
+
+  .customer-category-card {
+    min-height: 80px;
+    padding: 16px;
+    border-radius: 24px;
+  }
+
+  .customer-category-card strong {
+    font-size: 1.08rem;
+  }
+}

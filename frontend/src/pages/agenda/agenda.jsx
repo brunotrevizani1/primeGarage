@@ -39,11 +39,17 @@ function Agenda() {
   const [servicesMenuOpen, setServicesMenuOpen] = useState(false);
   const [error, setError] = useState("");
   const [agendaMenuOpen, setAgendaMenuOpen] = useState(true);
+  const [settingsMenuOpen, setSettingsMenuOpen] = useState(false);
   const [activeAgendaTab, setActiveAgendaTab] = useState(getInitialAgendaTab());
   const [selectedWorkingWeekday, setSelectedWorkingWeekday] = useState(1);
 
   const [userPermissions, setUserPermissions] = useState(getSavedPermissions());
   const [userRole, setUserRole] = useState(getSavedRole());
+
+  const canManageSettings = hasPermission(
+    "gerenciar_configuracoes",
+    userPermissions,
+  );
 
   const [blockForm, setBlockForm] = useState({
     block_date: "",
@@ -444,7 +450,51 @@ function Agenda() {
 
               {canViewFinance && <button type="button">Financeiro</button>}
 
-              {canViewFinance && <button type="button">Configurações</button>}
+              {canManageSettings && (
+                <div className="menu-group">
+                  <button
+                    type="button"
+                    className="menu-parent-button"
+                    onClick={() => setSettingsMenuOpen(!settingsMenuOpen)}
+                  >
+                    <span>Configurações</span>
+
+                    <svg
+                      className={
+                        settingsMenuOpen
+                          ? "submenu-arrow open"
+                          : "submenu-arrow"
+                      }
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                    >
+                      <path d="M7.22 9.47a.75.75 0 0 1 1.06 0L12 13.19l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0l-4.25-4.25a.75.75 0 0 1 0-1.06Z" />
+                    </svg>
+                  </button>
+
+                  {settingsMenuOpen && (
+                    <div className="submenu-links">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          (window.location.href = "/configuracoes?tab=initial")
+                        }
+                      >
+                        Informações iniciais
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          (window.location.href = "/configuracoes?tab=location")
+                        }
+                      >
+                        Localização
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
             </nav>
 
             <button
@@ -736,6 +786,14 @@ function Agenda() {
               </form>
             )}
 
+            <div className="blocks-list-header">
+              <div>
+                <h3>Bloqueios cadastrados</h3>
+              </div>
+
+              <span>{blocks.length} bloqueios</span>
+            </div>
+
             {blocks.length === 0 ? (
               <div className="empty-blocks">
                 <strong>Nenhum bloqueio cadastrado</strong>
@@ -745,10 +803,23 @@ function Agenda() {
               <div className="blocks-list">
                 {blocks.map((block) => (
                   <article className="block-card" key={block.id}>
-                    <div>
-                      <strong>{formatDate(block.block_date)}</strong>
-                      <span>{formatBlockTime(block)}</span>
-                      {block.reason && <p>{block.reason}</p>}
+                    <div className="block-card-main">
+                      <div className="block-type-badge">
+                        {toBoolean(block.is_full_day)
+                          ? "Dia inteiro"
+                          : "Horário"}
+                      </div>
+
+                      <div>
+                        <strong>{formatDate(block.block_date)}</strong>
+                        <span>{formatBlockTime(block)}</span>
+
+                        {block.reason ? (
+                          <p>{block.reason}</p>
+                        ) : (
+                          <p>Sem motivo informado</p>
+                        )}
+                      </div>
                     </div>
 
                     {canEditAgenda && (

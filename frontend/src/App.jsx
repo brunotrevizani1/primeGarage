@@ -9,6 +9,9 @@ import CategoriasServicos from "./pages/categorias-servicos/categoriasServicos";
 import Equipe from "./pages/equipe/equipe";
 import { apiRequest } from "./services/api";
 import Agenda from "./pages/agenda/agenda";
+import Configuracoes from "./pages/configuracoes/configuracoes";
+import ClienteInicio from "./pages/cliente/clienteInicio";
+import ClienteCategorias from "./pages/cliente/clienteCategorias";
 
 function App() {
   const path = window.location.pathname;
@@ -41,6 +44,20 @@ function App() {
     return null;
   }
 
+  const pathParts = path.split("/").filter(Boolean);
+
+  if (pathParts[0] === "agendar" && pathParts[1] && !pathParts[2]) {
+    return <ClienteInicio />;
+  }
+
+  if (
+    pathParts[0] === "agendar" &&
+    pathParts[1] &&
+    pathParts[2] === "categorias"
+  ) {
+    return <ClienteCategorias />;
+  }
+
   if (path === "/dashboard") return <Dashboard />;
   if (path === "/atendimentos") return <Atendimentos />;
   if (path === "/novo-atendimento") return <NovoAtendimento />;
@@ -49,6 +66,7 @@ function App() {
   if (path.startsWith("/editar-atendimento/")) return <EditarAtendimento />;
   if (path === "/servicos") return <Servicos />;
   if (path === "/agenda") return <Agenda />;
+  if (path === "/configuracoes") return <Configuracoes />;
 
   return <Login />;
 }

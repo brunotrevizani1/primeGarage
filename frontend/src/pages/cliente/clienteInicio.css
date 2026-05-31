@@ -1,0 +1,437 @@
+.customer-page {
+  min-height: 100vh;
+  background:
+    radial-gradient(
+      circle at top right,
+      rgba(47, 82, 73, 0.14),
+      transparent 34%
+    ),
+    linear-gradient(180deg, #f4f6f5 0%, #edf1ee 100%);
+  padding: 14px;
+}
+
+.customer-app {
+  width: 100%;
+  max-width: 430px;
+  min-height: calc(100vh - 28px);
+  margin: 0 auto;
+  display: grid;
+  grid-template-rows: 1fr auto auto;
+  gap: 14px;
+}
+
+.customer-hero {
+  background:
+    radial-gradient(
+      circle at top right,
+      rgba(151, 176, 103, 0.18),
+      transparent 34%
+    ),
+    #ffffff;
+  border-radius: 34px;
+  padding: 54px 20px 28px;
+  box-shadow: 0 18px 50px rgba(20, 33, 29, 0.11);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  text-align: center;
+  overflow: hidden;
+  position: relative;
+  min-height: 0;
+}
+
+.customer-hero::after {
+  content: "";
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  background: rgba(47, 82, 73, 0.07);
+  position: absolute;
+  left: -60px;
+  bottom: -70px;
+}
+
+.customer-main-logo {
+  width: 136px;
+  height: 136px;
+  border-radius: 34px;
+  background: #dbe7df;
+  color: #2f5249;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-shadow: 0 16px 34px rgba(20, 33, 29, 0.12);
+  position: relative;
+  z-index: 1;
+}
+
+.customer-main-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.customer-main-logo strong {
+  font-size: 3rem;
+  font-weight: 900;
+}
+
+.customer-main-text {
+  position: relative;
+  z-index: 1;
+}
+
+.customer-main-text span {
+  display: block;
+  color: #2f5249;
+  font-size: 0.76rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 9px;
+}
+
+.customer-main-text h1 {
+  color: #14211d;
+  font-size: 2.32rem;
+  line-height: 1.02;
+  letter-spacing: -0.07em;
+  margin-bottom: 11px;
+}
+
+.customer-main-text p {
+  color: #64716d;
+  font-size: 0.98rem;
+  line-height: 1.45;
+  max-width: 310px;
+  margin: 0 auto;
+}
+
+.customer-main-button {
+  width: 100%;
+  height: 56px;
+  border: none;
+  border-radius: 18px;
+  background: #2f5249;
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 14px 28px rgba(47, 82, 73, 0.22);
+  position: relative;
+  z-index: 1;
+}
+
+.customer-main-button:active {
+  transform: scale(0.98);
+}
+
+.customer-shortcuts {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 9px;
+}
+
+.shortcut-button {
+  min-height: 88px;
+  border: none;
+  border-radius: 22px;
+  background: #ffffff;
+  color: #14211d;
+  box-shadow: 0 12px 30px rgba(20, 33, 29, 0.07);
+  padding: 12px 6px;
+  cursor: pointer;
+}
+
+.shortcut-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 8px;
+}
+
+.shortcut-icon svg {
+  width: 22px;
+  height: 22px;
+  fill: currentColor;
+}
+
+.shortcut-button strong {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 900;
+}
+
+.shortcut-button.whatsapp .shortcut-icon {
+  background: rgba(37, 211, 102, 0.14);
+  color: #25d366;
+}
+
+.shortcut-button.instagram .shortcut-icon {
+  background: rgba(225, 48, 108, 0.13);
+  color: #e1306c;
+}
+
+.shortcut-button.location .shortcut-icon {
+  background: rgba(47, 82, 73, 0.13);
+  color: #2f5249;
+}
+
+.shortcut-button.hours .shortcut-icon {
+  background: rgba(245, 158, 11, 0.14);
+  color: #d97706;
+}
+
+.customer-footer {
+  margin-top: auto;
+  color: #7b8b85;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  text-align: center;
+  padding: 12px 10px 2px;
+}
+
+.customer-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 35;
+  background: rgba(20, 33, 29, 0.42);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 14px;
+}
+
+.customer-modal {
+  width: 100%;
+  max-width: 430px;
+  background: #ffffff;
+  border-radius: 30px;
+  padding: 18px;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.22);
+  animation: customerModalUp 0.2s ease;
+}
+
+.customer-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.customer-modal-header strong {
+  display: block;
+  color: #14211d;
+  font-size: 1.15rem;
+  font-weight: 900;
+}
+
+.customer-modal-header span {
+  display: block;
+  color: #64716d;
+  font-size: 0.82rem;
+  font-weight: 800;
+  margin-top: 3px;
+}
+
+.customer-modal-header button {
+  width: 38px;
+  height: 38px;
+  min-width: 38px;
+  border: none;
+  border-radius: 14px;
+  background: #f1f4f2;
+  color: #14211d;
+  font-size: 1.4rem;
+  cursor: pointer;
+}
+
+.customer-modal-body {
+  background: #f8faf9;
+  border: 1px solid #edf1ee;
+  border-radius: 24px;
+  padding: 20px;
+  text-align: center;
+  margin-bottom: 14px;
+}
+
+.modal-main-icon {
+  width: 58px;
+  height: 58px;
+  border-radius: 20px;
+  background: #dbe7df;
+  color: #2f5249;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 12px;
+}
+
+.modal-main-icon svg {
+  width: 28px;
+  height: 28px;
+  fill: currentColor;
+}
+
+.customer-modal-body h2 {
+  color: #14211d;
+  font-size: 1.16rem;
+  letter-spacing: -0.04em;
+  margin-bottom: 8px;
+}
+
+.customer-modal-body p {
+  color: #64716d;
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.modal-primary-button {
+  width: 100%;
+  height: 52px;
+  border: none;
+  border-radius: 17px;
+  background: #2f5249;
+  color: #ffffff;
+  font-size: 0.95rem;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 14px 28px rgba(47, 82, 73, 0.2);
+}
+
+.modal-primary-button:active {
+  transform: scale(0.98);
+}
+
+.working-hours-modal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.working-hours-modal-row {
+  background: #f8faf9;
+  border: 1px solid #edf1ee;
+  border-radius: 18px;
+  padding: 13px 14px;
+}
+
+.working-hours-modal-row strong {
+  display: block;
+  color: #14211d;
+  font-size: 0.94rem;
+  font-weight: 900;
+  margin-bottom: 4px;
+}
+
+.working-hours-modal-row span {
+  display: block;
+  color: #64716d;
+  font-size: 0.84rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.customer-loading,
+.customer-error-card {
+  width: 100%;
+  max-width: 380px;
+  background: #ffffff;
+  border-radius: 26px;
+  padding: 28px;
+  text-align: center;
+  box-shadow: 0 20px 50px rgba(20, 33, 29, 0.1);
+  margin: 120px auto 0;
+}
+
+.customer-loading {
+  color: #64716d;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.customer-loading-circle {
+  width: 42px;
+  height: 42px;
+  border: 4px solid rgba(47, 82, 73, 0.18);
+  border-top-color: #2f5249;
+  border-radius: 50%;
+  animation: customerSpin 0.8s linear infinite;
+}
+
+.customer-error-card strong {
+  display: block;
+  color: #14211d;
+  font-size: 1.1rem;
+  margin-bottom: 8px;
+}
+
+.customer-error-card p {
+  color: #b91c1c;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+@keyframes customerModalUp {
+  from {
+    transform: translateY(34px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes customerSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 380px) {
+  .customer-page {
+    padding: 10px;
+  }
+
+  .customer-app {
+    min-height: calc(100vh - 20px);
+  }
+
+  .customer-hero {
+    border-radius: 30px;
+    padding: 34px 18px 22px;
+  }
+
+  .customer-main-logo {
+    width: 108px;
+    height: 108px;
+    border-radius: 30px;
+  }
+
+  .customer-main-text h1 {
+    font-size: 1.9rem;
+  }
+
+  .customer-main-text p {
+    font-size: 0.94rem;
+  }
+
+  .shortcut-button {
+    min-height: 82px;
+  }
+
+  .shortcut-button strong {
+    font-size: 0.62rem;
+  }
+}
