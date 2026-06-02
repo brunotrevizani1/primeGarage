@@ -112,25 +112,89 @@ async function createEmployee(req, res) {
 
     await connection.beginTransaction();
 
+    const cleanName = name.trim();
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPhone = phone.trim();
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const normalizedPermissions = normalizePermissions(permissions);
+
     const [existingUsers] = await connection.query(
       `
-      SELECT id
+      SELECT id, status, role
       FROM users
       WHERE email = ?
       LIMIT 1
       `,
-      [email],
+      [cleanEmail],
     );
 
     if (existingUsers.length > 0) {
-      await connection.rollback();
+      const existingUser = existingUsers[0];
 
-      return res.status(400).json({
-        mensagem: "Já existe um usuário cadastrado com este e-mail.",
+      if (existingUser.status === "active") {
+        await connection.rollback();
+
+        return res.status(400).json({
+          mensagem: "Já existe um usuário ativo com esse e-mail.",
+        });
+      }
+
+      await connection.query(
+        `
+        UPDATE users
+        SET
+          business_id = ?,
+          name = ?,
+          phone = ?,
+          password = ?,
+          role = 'employee',
+          status = 'active'
+        WHERE id = ?
+        `,
+        [businessId, cleanName, cleanPhone, hashedPassword, existingUser.id],
+      );
+
+      await connection.query(
+        `
+        DELETE FROM user_permissions
+        WHERE user_id = ?
+        `,
+        [existingUser.id],
+      );
+
+      if (normalizedPermissions.length > 0) {
+        const [permissionRows] = await connection.query(
+          `
+          SELECT id
+          FROM permissions
+          WHERE code IN (?)
+          `,
+          [normalizedPermissions],
+        );
+
+        for (const permission of permissionRows) {
+          await connection.query(
+            `
+            INSERT IGNORE INTO user_permissions (user_id, permission_id)
+            VALUES (?, ?)
+            `,
+            [existingUser.id, permission.id],
+          );
+        }
+      }
+
+      await connection.commit();
+
+      return res.status(200).json({
+        mensagem: "Funcionário reativado com sucesso.",
+        employee: {
+          id: existingUser.id,
+          name: cleanName,
+          email: cleanEmail,
+          phone: cleanPhone,
+        },
       });
     }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
 
     const [result] = await connection.query(
       `
@@ -138,29 +202,27 @@ async function createEmployee(req, res) {
       (business_id, name, email, phone, password, role, status)
       VALUES (?, ?, ?, ?, ?, 'employee', 'active')
       `,
-      [businessId, name.trim(), email.trim(), phone.trim(), hashedPassword],
+      [businessId, cleanName, cleanEmail, cleanPhone, hashedPassword],
     );
 
     const employeeId = result.insertId;
 
-    const normalizedPermissions = normalizePermissions(permissions);
-
     if (normalizedPermissions.length > 0) {
       const [permissionRows] = await connection.query(
         `
-    SELECT id, code
-    FROM permissions
-    WHERE code IN (?)
-    `,
+        SELECT id
+        FROM permissions
+        WHERE code IN (?)
+        `,
         [normalizedPermissions],
       );
 
       for (const permission of permissionRows) {
         await connection.query(
           `
-      INSERT IGNORE INTO user_permissions (user_id, permission_id)
-      VALUES (?, ?)
-      `,
+          INSERT IGNORE INTO user_permissions (user_id, permission_id)
+          VALUES (?, ?)
+          `,
           [employeeId, permission.id],
         );
       }
@@ -168,19 +230,19 @@ async function createEmployee(req, res) {
 
     await connection.commit();
 
-    res.status(201).json({
+    return res.status(201).json({
       mensagem: "Funcionário criado com sucesso.",
       employee: {
         id: employeeId,
-        name,
-        email,
-        phone,
+        name: cleanName,
+        email: cleanEmail,
+        phone: cleanPhone,
       },
     });
   } catch (error) {
     await connection.rollback();
 
-    res.status(500).json({
+    return res.status(500).json({
       mensagem: "Erro ao criar funcionário.",
       erro: error.message,
     });

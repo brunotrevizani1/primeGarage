@@ -108,9 +108,7 @@ function Atendimentos() {
   function goToTodayFromModal() {
     const today = new Date().toISOString().slice(0, 10);
 
-    setSelectedDate(today);
     setTemporaryDate(today);
-    setDateModalOpen(false);
   }
 
   function getQueueTitle() {

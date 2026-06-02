@@ -659,7 +659,7 @@ function Servicos() {
                 <strong>
                   {editingService ? "Editar serviço" : "Novo serviço"}
                 </strong>
-                <p>Configure categoria, preço e duração.</p>
+                <p>Configure categoria, nome, preço e duração.</p>
               </div>
 
               <button type="button" onClick={closeServiceModal}>

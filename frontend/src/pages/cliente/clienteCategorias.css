@@ -57,17 +57,6 @@
   position: relative;
 }
 
-.customer-category-hero::after {
-  content: "";
-  width: 135px;
-  height: 135px;
-  border-radius: 50%;
-  background: rgba(47, 82, 73, 0.07);
-  position: absolute;
-  left: -62px;
-  bottom: -70px;
-}
-
 .customer-category-logo-large {
   width: 82px;
   height: 82px;

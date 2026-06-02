@@ -57,6 +57,12 @@ function NovoAtendimento() {
     notes: "",
   });
 
+  function capitalizeWords(value) {
+    return value
+      .toLowerCase()
+      .replace(/\b\w/g, (letter) => letter.toUpperCase());
+  }
+
   function updateField(field, value) {
     setForm((currentForm) => ({
       ...currentForm,
@@ -136,12 +142,13 @@ function NovoAtendimento() {
   }
 
   function handleModelChange(value) {
-    const formatted = value.replace(/[^A-Za-zÀ-ÿ0-9\s]/g, "");
-    updateField("vehicleModel", formatted);
+    const cleanValue = value.replace(/[^A-Za-zÀ-ÿ0-9\s]/g, "");
+    updateField("vehicleModel", capitalizeWords(cleanValue));
   }
 
   function handleColorChange(value) {
-    updateField("vehicleColor", onlyLetters(value));
+    const cleanValue = onlyLetters(value);
+    updateField("vehicleColor", capitalizeWords(cleanValue));
   }
 
   async function loadOptions() {
@@ -498,6 +505,20 @@ function NovoAtendimento() {
                   </option>
                 ))}
               </select>
+              <div className="form-group">
+                <label>Preço</label>
+                <input
+                  type="text"
+                  placeholder="R$ 0,00"
+                  value={form.price}
+                  onChange={(event) =>
+                    updateField(
+                      "price",
+                      formatCurrencyInput(event.target.value),
+                    )
+                  }
+                />
+              </div>
             </div>
           </div>
           <div className="form-section">

@@ -23,6 +23,7 @@ function goBackToAttendances() {
 function EditarAtendimento() {
   const orderId = window.location.pathname.split("/").pop();
 
+  const [categories, setCategories] = useState([]);
   const [services, setServices] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [hasPayment, setHasPayment] = useState(false);
@@ -43,6 +44,7 @@ function EditarAtendimento() {
     price: "",
     scheduledDate: "",
     responsibleUserId: "",
+    categoryId: "",
     notes: "",
   });
 
@@ -180,6 +182,7 @@ function EditarAtendimento() {
       setLoading(true);
       setError("");
 
+      const categoriesResponse = await apiRequest("/api/service-categories");
       const servicesResponse = await apiRequest("/api/services");
       const employeesResponse = await apiRequest("/api/team/responsibles");
       const orderResponse = await apiRequest(`/api/orders/${orderId}`);
@@ -190,7 +193,13 @@ function EditarAtendimento() {
         setError("Atendimentos entregues não podem ser editados.");
       }
 
-      setServices(servicesResponse.services || []);
+      const loadedServices = servicesResponse.services || [];
+      const currentService = loadedServices.find(
+        (service) => String(service.id) === String(order.service_id),
+      );
+
+      setCategories(categoriesResponse.categories || []);
+      setServices(loadedServices);
       setEmployees(employeesResponse.employees || []);
       setHasPayment(Boolean(order.has_payment));
       setStatus(order.status);
@@ -200,6 +209,7 @@ function EditarAtendimento() {
         customerPhone: formatPhone(order.customer_phone || ""),
         vehiclePlate: order.vehicle_plate || "",
         vehicleModel: order.vehicle_model || "",
+        categoryId: currentService?.category_id || "",
         vehicleColor: order.vehicle_color || "",
         serviceId: order.service_id || "",
         price: order.price || "",
@@ -214,6 +224,15 @@ function EditarAtendimento() {
     } finally {
       setLoading(false);
     }
+  }
+
+  function handleCategoryChange(categoryId) {
+    setForm((currentForm) => ({
+      ...currentForm,
+      categoryId,
+      serviceId: "",
+      price: hasPayment ? currentForm.price : "",
+    }));
   }
 
   function handleServiceChange(serviceId) {
@@ -331,6 +350,12 @@ function EditarAtendimento() {
     );
   }
 
+  const filteredServices = form.categoryId
+    ? services.filter(
+        (service) => String(service.category_id) === String(form.categoryId),
+      )
+    : [];
+
   return (
     <main className="edit-order-page">
       <section className="edit-order-container">
@@ -428,15 +453,38 @@ function EditarAtendimento() {
             <h2>Serviço</h2>
 
             <div className="form-group">
+              <label>Categoria</label>
+              <select
+                value={form.categoryId}
+                disabled={status === "entregue"}
+                onChange={(event) => handleCategoryChange(event.target.value)}
+              >
+                <option value="">Selecione uma categoria</option>
+
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group">
               <label>Serviço</label>
               <select
                 value={form.serviceId}
-                disabled={status === "entregue"}
+                disabled={status === "entregue" || !form.categoryId}
                 onChange={(event) => handleServiceChange(event.target.value)}
               >
-                <option value="">Selecione um serviço</option>
+                <option value="">
+                  {!form.categoryId
+                    ? "Escolha uma categoria primeiro"
+                    : filteredServices.length === 0
+                      ? "Nenhum serviço nessa categoria"
+                      : "Selecione um serviço"}
+                </option>
 
-                {services.map((service) => (
+                {filteredServices.map((service) => (
                   <option key={service.id} value={service.id}>
                     {service.name}
                   </option>
