@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import MenuIcon from "../../components/MenuIcon";
 import { apiRequest } from "../../services/api";
 import {
   getSavedPermissions,
@@ -234,7 +235,8 @@ function Configuracoes() {
                   type="button"
                   onClick={() => (window.location.href = "/dashboard")}
                 >
-                  Dashboard
+                  <MenuIcon name="dashboard" />
+                  <span>Dashboard</span>
                 </button>
               )}
 
@@ -243,7 +245,8 @@ function Configuracoes() {
                   type="button"
                   onClick={() => (window.location.href = "/atendimentos")}
                 >
-                  Atendimentos
+                  <MenuIcon name="attendance" />
+                  <span>Atendimentos</span>
                 </button>
               )}
 
@@ -254,6 +257,7 @@ function Configuracoes() {
                     className="menu-parent-button"
                     onClick={() => setAgendaMenuOpen(!agendaMenuOpen)}
                   >
+                    <MenuIcon name="agenda" />
                     <span>Agenda</span>
 
                     <svg
@@ -275,7 +279,8 @@ function Configuracoes() {
                           (window.location.href = "/agenda?tab=hours")
                         }
                       >
-                        Horários de funcionamento
+                        <MenuIcon name="schedule" />
+                        <span>Horários de funcionamento</span>
                       </button>
 
                       <button
@@ -284,7 +289,8 @@ function Configuracoes() {
                           (window.location.href = "/agenda?tab=blocks")
                         }
                       >
-                        Bloqueios de agenda
+                        <MenuIcon name="blocks" />
+                        <span>Bloqueios de agenda</span>
                       </button>
                     </div>
                   )}
@@ -296,7 +302,8 @@ function Configuracoes() {
                   type="button"
                   onClick={() => (window.location.href = "/equipe")}
                 >
-                  Equipe
+                  <MenuIcon name="team" />
+                  <span>Equipe</span>
                 </button>
               )}
 
@@ -307,6 +314,7 @@ function Configuracoes() {
                     className="menu-parent-button"
                     onClick={() => setServicesMenuOpen(!servicesMenuOpen)}
                   >
+                    <MenuIcon name="services" />
                     <span>Serviços</span>
 
                     <svg
@@ -328,7 +336,8 @@ function Configuracoes() {
                         type="button"
                         onClick={() => (window.location.href = "/servicos")}
                       >
-                        Lista de serviços
+                        <MenuIcon name="services" />
+                        <span>Lista de serviços</span>
                       </button>
 
                       {canViewCategories && (
@@ -338,7 +347,8 @@ function Configuracoes() {
                             (window.location.href = "/categorias-servicos")
                           }
                         >
-                          Categorias
+                          <MenuIcon name="categories" />
+                          <span>Categorias</span>
                         </button>
                       )}
                     </div>
@@ -346,7 +356,12 @@ function Configuracoes() {
                 </div>
               )}
 
-              {canViewFinance && <button type="button">Financeiro</button>}
+              {canViewFinance && (
+                <button type="button">
+                  <MenuIcon name="finance" />
+                  <span>Financeiro</span>
+                </button>
+              )}
 
               {canManageSettings && (
                 <div className="menu-group">
@@ -355,6 +370,7 @@ function Configuracoes() {
                     className="menu-parent-button active"
                     onClick={() => setSettingsMenuOpen(!settingsMenuOpen)}
                   >
+                    <MenuIcon name="settings" />
                     <span>Configurações</span>
 
                     <svg
@@ -379,7 +395,8 @@ function Configuracoes() {
                         }
                         onClick={() => changeSettingsTab("initial")}
                       >
-                        Informações iniciais
+                        <MenuIcon name="info" />
+                        <span>Informações iniciais</span>
                       </button>
 
                       <button
@@ -389,7 +406,8 @@ function Configuracoes() {
                         }
                         onClick={() => changeSettingsTab("location")}
                       >
-                        Localização
+                        <MenuIcon name="location" />
+                        <span>Localização</span>
                       </button>
                     </div>
                   )}

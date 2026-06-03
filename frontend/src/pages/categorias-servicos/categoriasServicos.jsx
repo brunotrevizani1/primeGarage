@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import MenuIcon from "../../components/MenuIcon";
 import { apiRequest } from "../../services/api";
 import {
   getSavedPermissions,
@@ -18,6 +19,7 @@ function CategoriasServicos() {
   const [editingCategory, setEditingCategory] = useState(null);
   const [categoryName, setCategoryName] = useState("");
   const [saving, setSavinStateg] = useState(false);
+  const [settingsMenuOpen, setSettingsMenuOpen] = useState(false);
   const [error, setError] = useState("");
   const [agendaMenuOpen, setAgendaMenuOpen] = useState(false);
 
@@ -260,7 +262,8 @@ function CategoriasServicos() {
                   type="button"
                   onClick={() => (window.location.href = "/dashboard")}
                 >
-                  Dashboard
+                  <MenuIcon name="dashboard" />
+                  <span>Dashboard</span>
                 </button>
               )}
 
@@ -269,7 +272,8 @@ function CategoriasServicos() {
                   type="button"
                   onClick={() => (window.location.href = "/atendimentos")}
                 >
-                  Atendimentos
+                  <MenuIcon name="attendance" />
+                  <span>Atendimentos</span>
                 </button>
               )}
 
@@ -280,6 +284,7 @@ function CategoriasServicos() {
                     className="menu-parent-button"
                     onClick={() => setAgendaMenuOpen(!agendaMenuOpen)}
                   >
+                    <MenuIcon name="agenda" />
                     <span>Agenda</span>
 
                     <svg
@@ -301,7 +306,8 @@ function CategoriasServicos() {
                           (window.location.href = "/agenda?tab=hours")
                         }
                       >
-                        Horários de funcionamento
+                        <MenuIcon name="schedule" />
+                        <span>Horários de funcionamento</span>
                       </button>
 
                       <button
@@ -310,7 +316,8 @@ function CategoriasServicos() {
                           (window.location.href = "/agenda?tab=blocks")
                         }
                       >
-                        Bloqueios de agenda
+                        <MenuIcon name="blocks" />
+                        <span>Bloqueios de agenda</span>
                       </button>
                     </div>
                   )}
@@ -322,7 +329,8 @@ function CategoriasServicos() {
                   type="button"
                   onClick={() => (window.location.href = "/equipe")}
                 >
-                  Equipe
+                  <MenuIcon name="team" />
+                  <span>Equipe</span>
                 </button>
               )}
 
@@ -333,6 +341,7 @@ function CategoriasServicos() {
                     className="menu-parent-button active"
                     onClick={() => setServicesMenuOpen(!servicesMenuOpen)}
                   >
+                    <MenuIcon name="services" />
                     <span>Serviços</span>
 
                     <svg
@@ -355,13 +364,15 @@ function CategoriasServicos() {
                           type="button"
                           onClick={() => (window.location.href = "/servicos")}
                         >
-                          Lista de serviços
+                          <MenuIcon name="services" />
+                          <span>Lista de serviços</span>
                         </button>
                       )}
 
                       {canViewCategories && (
                         <button className="active" type="button">
-                          Categorias
+                          <MenuIcon name="categories" />
+                          <span>Categorias</span>
                         </button>
                       )}
                     </div>
@@ -369,15 +380,60 @@ function CategoriasServicos() {
                 </div>
               )}
 
-              {canViewFinance && <button type="button">Financeiro</button>}
+              {canViewFinance && (
+                <button type="button">
+                  <MenuIcon name="finance" />
+                  <span>Financeiro</span>
+                </button>
+              )}
 
               {hasPermission("gerenciar_configuracoes", userPermissions) && (
-                <button
-                  type="button"
-                  onClick={() => (window.location.href = "/configuracoes")}
-                >
-                  Configurações
-                </button>
+                <div className="menu-group">
+                  <button
+                    type="button"
+                    className="menu-parent-button"
+                    onClick={() => setSettingsMenuOpen(!settingsMenuOpen)}
+                  >
+                    <MenuIcon name="settings" />
+                    <span>Configurações</span>
+
+                    <svg
+                      className={
+                        settingsMenuOpen
+                          ? "submenu-arrow open"
+                          : "submenu-arrow"
+                      }
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                    >
+                      <path d="M7.22 9.47a.75.75 0 0 1 1.06 0L12 13.19l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0l-4.25-4.25a.75.75 0 0 1 0-1.06Z" />
+                    </svg>
+                  </button>
+
+                  {settingsMenuOpen && (
+                    <div className="submenu-links">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          (window.location.href = "/configuracoes?tab=initial")
+                        }
+                      >
+                        <MenuIcon name="info" />
+                        <span>Informações iniciais</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          (window.location.href = "/configuracoes?tab=location")
+                        }
+                      >
+                        <MenuIcon name="location" />
+                        <span>Localização</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
               )}
             </nav>
 

@@ -121,10 +121,9 @@ function ClienteCategorias() {
                 </div>
               </button>
             ))}
+            <div className="customer-category-step-text">Etapa 1 de 5</div>
           </section>
         )}
-
-        <div className="customer-category-step-text">Etapa 1 de 5</div>
 
         <footer className="customer-category-footer">
           Todos os direitos reservados a {business?.name || "Lava-jato"}.

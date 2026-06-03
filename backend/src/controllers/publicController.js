@@ -81,6 +81,98 @@ async function getCustomerPage(req, res) {
   }
 }
 
+async function listPublicServicesByCategory(req, res) {
+  try {
+    const { businessId } = req.params;
+    const { categoryId } = req.query;
+
+    if (!businessId) {
+      return res.status(400).json({
+        mensagem: "Lava-jato não informado.",
+      });
+    }
+
+    if (!categoryId) {
+      return res.status(400).json({
+        mensagem: "Categoria não informada.",
+      });
+    }
+
+    const [businesses] = await db.query(
+      `
+      SELECT
+        id,
+        name,
+        customer_page_name,
+        customer_page_logo_url
+      FROM businesses
+      WHERE id = ?
+      `,
+      [businessId],
+    );
+
+    if (businesses.length === 0) {
+      return res.status(404).json({
+        mensagem: "Lava-jato não encontrado.",
+      });
+    }
+
+    const [categories] = await db.query(
+      `
+      SELECT
+        id,
+        name
+      FROM service_categories
+      WHERE id = ?
+      AND business_id = ?
+      AND status = 'active'
+      `,
+      [categoryId, businessId],
+    );
+
+    if (categories.length === 0) {
+      return res.status(404).json({
+        mensagem: "Categoria não encontrada.",
+      });
+    }
+
+    const [services] = await db.query(
+      `
+      SELECT
+        id,
+        name,
+        description,
+        price,
+        duration_minutes
+      FROM services
+      WHERE business_id = ?
+      AND category_id = ?
+      AND status = 'active'
+      ORDER BY name ASC
+      `,
+      [businessId, categoryId],
+    );
+
+    const business = businesses[0];
+
+    return res.json({
+      mensagem: "Serviços listados com sucesso.",
+      business: {
+        id: business.id,
+        name: business.customer_page_name || business.name,
+        logoUrl: business.customer_page_logo_url || "",
+      },
+      category: categories[0],
+      services,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      mensagem: "Erro ao listar serviços.",
+      erro: error.message,
+    });
+  }
+}
+
 async function listPublicCategories(req, res) {
   try {
     const { businessId } = req.params;
@@ -145,4 +237,5 @@ async function listPublicCategories(req, res) {
 module.exports = {
   getCustomerPage,
   listPublicCategories,
+  listPublicServicesByCategory,
 };

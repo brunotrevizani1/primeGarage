@@ -12,6 +12,7 @@ import Agenda from "./pages/agenda/agenda";
 import Configuracoes from "./pages/configuracoes/configuracoes";
 import ClienteInicio from "./pages/cliente/clienteInicio";
 import ClienteCategorias from "./pages/cliente/clienteCategorias";
+import ClienteServicos from "./pages/cliente/clienteServicos";
 
 function App() {
   const path = window.location.pathname;
@@ -56,6 +57,14 @@ function App() {
     pathParts[2] === "categorias"
   ) {
     return <ClienteCategorias />;
+  }
+
+  if (
+    pathParts[0] === "agendar" &&
+    pathParts[1] &&
+    pathParts[2] === "servicos"
+  ) {
+    return <ClienteServicos />;
   }
 
   if (path === "/dashboard") return <Dashboard />;

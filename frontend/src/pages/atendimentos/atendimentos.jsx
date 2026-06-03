@@ -1,3 +1,4 @@
+import MenuIcon from "../../components/MenuIcon";
 import { useEffect, useState } from "react";
 import { apiRequest } from "../../services/api";
 import {
@@ -336,13 +337,15 @@ function Atendimentos() {
                   type="button"
                   onClick={() => (window.location.href = "/dashboard")}
                 >
-                  Dashboard
+                  <MenuIcon name="dashboard" />
+                  <span>Dashboard</span>
                 </button>
               )}
 
               {canViewQueue && (
                 <button className="active" type="button">
-                  Atendimentos
+                  <MenuIcon name="attendance" />
+                  <span>Atendimentos</span>
                 </button>
               )}
 
@@ -353,6 +356,7 @@ function Atendimentos() {
                     className="menu-parent-button"
                     onClick={() => setAgendaMenuOpen(!agendaMenuOpen)}
                   >
+                    <MenuIcon name="agenda" />
                     <span>Agenda</span>
 
                     <svg
@@ -374,7 +378,8 @@ function Atendimentos() {
                           (window.location.href = "/agenda?tab=hours")
                         }
                       >
-                        Horários de funcionamento
+                        <MenuIcon name="schedule" />
+                        <span>Horários de funcionamento</span>
                       </button>
 
                       <button
@@ -383,7 +388,8 @@ function Atendimentos() {
                           (window.location.href = "/agenda?tab=blocks")
                         }
                       >
-                        Bloqueios de agenda
+                        <MenuIcon name="blocks" />
+                        <span>Bloqueios de agenda</span>
                       </button>
                     </div>
                   )}
@@ -395,7 +401,8 @@ function Atendimentos() {
                   type="button"
                   onClick={() => (window.location.href = "/equipe")}
                 >
-                  Equipe
+                  <MenuIcon name="team" />
+                  <span>Equipe</span>
                 </button>
               )}
 
@@ -406,6 +413,7 @@ function Atendimentos() {
                     className="menu-parent-button"
                     onClick={() => setServicesMenuOpen(!servicesMenuOpen)}
                   >
+                    <MenuIcon name="services" />
                     <span>Serviços</span>
 
                     <svg
@@ -427,25 +435,30 @@ function Atendimentos() {
                         type="button"
                         onClick={() => (window.location.href = "/servicos")}
                       >
-                        Lista de serviços
+                        <MenuIcon name="services" />
+                        <span>Lista de serviços</span>
                       </button>
 
-                      {canViewCategories && (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            (window.location.href = "/categorias-servicos")
-                          }
-                        >
-                          Categorias
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          (window.location.href = "/categorias-servicos")
+                        }
+                      >
+                        <MenuIcon name="categories" />
+                        <span>Categorias</span>
+                      </button>
                     </div>
                   )}
                 </div>
               )}
 
-              {canViewFinance && <button type="button">Financeiro</button>}
+              {canViewFinance && (
+                <button type="button">
+                  <MenuIcon name="finance" />
+                  <span>Financeiro</span>
+                </button>
+              )}
 
               {canManageSettings && (
                 <div className="menu-group">
@@ -454,6 +467,7 @@ function Atendimentos() {
                     className="menu-parent-button"
                     onClick={() => setSettingsMenuOpen(!settingsMenuOpen)}
                   >
+                    <MenuIcon name="settings" />
                     <span>Configurações</span>
 
                     <svg
@@ -477,7 +491,8 @@ function Atendimentos() {
                           (window.location.href = "/configuracoes?tab=initial")
                         }
                       >
-                        Informações iniciais
+                        <MenuIcon name="info" />
+                        <span>Informações iniciais</span>
                       </button>
 
                       <button
@@ -486,7 +501,8 @@ function Atendimentos() {
                           (window.location.href = "/configuracoes?tab=location")
                         }
                       >
-                        Localização
+                        <MenuIcon name="location" />
+                        <span>Localização</span>
                       </button>
                     </div>
                   )}

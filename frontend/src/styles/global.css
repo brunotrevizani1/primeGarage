@@ -21,3 +21,35 @@ textarea,
 select {
   font: inherit;
 }
+
+.menu-icon {
+  width: 19px;
+  height: 19px;
+  min-width: 19px;
+  fill: currentColor;
+}
+
+.side-menu-links button,
+.menu-parent-button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.submenu-links button {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding-left: 18px;
+}
+
+.menu-parent-button span,
+.side-menu-links button span,
+.submenu-links button span {
+  flex: 1;
+  text-align: left;
+}
+
+.submenu-arrow {
+  margin-left: auto;
+}
