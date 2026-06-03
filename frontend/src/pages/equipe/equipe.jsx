@@ -324,6 +324,8 @@ function Equipe() {
         "cancelar_atendimento",
       ],
 
+      ver_agenda: ["editar_agenda"],
+
       ver_servicos: [
         "criar_servico",
         "editar_servico",
@@ -359,6 +361,8 @@ function Equipe() {
       alterar_status: ["ver_fila"],
       cancelar_atendimento: ["ver_fila"],
 
+      editar_agenda: ["ver_agenda"],
+
       criar_servico: ["ver_servicos"],
       editar_servico: ["ver_servicos"],
       excluir_servico: ["ver_servicos"],
@@ -378,34 +382,31 @@ function Equipe() {
 
   function togglePermission(permissionCode) {
     setForm((currentForm) => {
-      const selectedPermissions = currentForm.permissions;
-      const hasCurrentPermission = selectedPermissions.includes(permissionCode);
+      const permissionsSet = new Set(currentForm.permissions);
 
-      if (hasCurrentPermission) {
-        const isParentStillNeeded = hasChildPermission(
-          permissionCode,
-          selectedPermissions,
-        );
+      if (permissionsSet.has(permissionCode)) {
+        permissionsSet.delete(permissionCode);
 
-        if (isParentStillNeeded) {
-          return currentForm;
+        if (permissionCode === "ver_agenda") {
+          permissionsSet.delete("editar_agenda");
+        }
+      } else {
+        permissionsSet.add(permissionCode);
+
+        if (permissionCode === "editar_agenda") {
+          permissionsSet.add("ver_agenda");
         }
 
-        return {
-          ...currentForm,
-          permissions: selectedPermissions.filter(
-            (code) => code !== permissionCode,
-          ),
-        };
-      }
+        const dependencies = getPermissionDependencies(permissionCode);
 
-      const dependencies = getPermissionDependencies(permissionCode);
+        dependencies.forEach((dependency) => {
+          permissionsSet.add(dependency);
+        });
+      }
 
       return {
         ...currentForm,
-        permissions: Array.from(
-          new Set([...selectedPermissions, permissionCode, ...dependencies]),
-        ),
+        permissions: Array.from(permissionsSet),
       };
     });
   }
@@ -423,6 +424,9 @@ function Equipe() {
       editar_atendimento: 3,
       alterar_status: 4,
       cancelar_atendimento: 5,
+
+      ver_agenda: 1,
+      editar_agenda: 2,
 
       ver_servicos: 1,
       criar_servico: 2,

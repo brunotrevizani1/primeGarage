@@ -392,10 +392,17 @@ async function listPermissions(req, res) {
   try {
     const [permissions] = await db.query(
       `
-      SELECT id, code, name, group_name
-      FROM permissions
-      ORDER BY group_name ASC, name ASC
-      `,
+  SELECT id, code, name, group_name
+  FROM permissions
+  ORDER BY 
+    group_name ASC,
+    CASE
+      WHEN code = 'ver_agenda' THEN 1
+      WHEN code = 'editar_agenda' THEN 2
+      ELSE 99
+    END ASC,
+    name ASC
+  `,
     );
 
     res.json({
