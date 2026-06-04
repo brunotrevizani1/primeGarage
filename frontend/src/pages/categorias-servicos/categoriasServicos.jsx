@@ -18,7 +18,7 @@ function CategoriasServicos() {
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
   const [categoryName, setCategoryName] = useState("");
-  const [saving, setSavinStateg] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [settingsMenuOpen, setSettingsMenuOpen] = useState(false);
   const [error, setError] = useState("");
   const [agendaMenuOpen, setAgendaMenuOpen] = useState(false);
@@ -35,6 +35,7 @@ function CategoriasServicos() {
   const canDeleteCategory = hasPermission("excluir_categoria", userPermissions);
   const canViewTeam = hasPermission("ver_equipe", userPermissions);
   const canViewAgenda = hasPermission("ver_agenda", userPermissions);
+  const canViewCustomers = hasPermission("ver_cliente", userPermissions);
 
   const canViewFinance = userRole === "owner" || userRole === "super_admin";
 
@@ -277,6 +278,33 @@ function CategoriasServicos() {
                 </button>
               )}
 
+              {canViewFinance && (
+                <button type="button">
+                  <MenuIcon name="finance" />
+                  <span>Financeiro</span>
+                </button>
+              )}
+
+              {canViewCustomers && (
+                <button
+                  type="button"
+                  onClick={() => (window.location.href = "/clientes")}
+                >
+                  <MenuIcon name="customers" />
+                  <span>Clientes</span>
+                </button>
+              )}
+
+              {canViewTeam && (
+                <button
+                  type="button"
+                  onClick={() => (window.location.href = "/equipe")}
+                >
+                  <MenuIcon name="team" />
+                  <span>Equipe</span>
+                </button>
+              )}
+
               {canViewAgenda && (
                 <div className="menu-group">
                   <button
@@ -324,16 +352,6 @@ function CategoriasServicos() {
                 </div>
               )}
 
-              {canViewTeam && (
-                <button
-                  type="button"
-                  onClick={() => (window.location.href = "/equipe")}
-                >
-                  <MenuIcon name="team" />
-                  <span>Equipe</span>
-                </button>
-              )}
-
               {(canViewServices || canViewCategories) && (
                 <div className="menu-group">
                   <button
@@ -378,13 +396,6 @@ function CategoriasServicos() {
                     </div>
                   )}
                 </div>
-              )}
-
-              {canViewFinance && (
-                <button type="button">
-                  <MenuIcon name="finance" />
-                  <span>Financeiro</span>
-                </button>
               )}
 
               {hasPermission("gerenciar_configuracoes", userPermissions) && (

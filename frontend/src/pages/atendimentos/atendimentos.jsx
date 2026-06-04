@@ -21,6 +21,7 @@ function Atendimentos() {
   const [settingsMenuOpen, setSettingsMenuOpen] = useState(false);
 
   const [userPermissions, setUserPermissions] = useState(getSavedPermissions());
+  const canViewCustomers = hasPermission("ver_cliente", userPermissions);
   const [userRole, setUserRole] = useState(getSavedRole());
 
   function getInitialSelectedDate() {
@@ -349,6 +350,33 @@ function Atendimentos() {
                 </button>
               )}
 
+              {canViewFinance && (
+                <button type="button">
+                  <MenuIcon name="finance" />
+                  <span>Financeiro</span>
+                </button>
+              )}
+
+              {canViewCustomers && (
+                <button
+                  type="button"
+                  onClick={() => (window.location.href = "/clientes")}
+                >
+                  <MenuIcon name="customers" />
+                  <span>Clientes</span>
+                </button>
+              )}
+
+              {canViewTeam && (
+                <button
+                  type="button"
+                  onClick={() => (window.location.href = "/equipe")}
+                >
+                  <MenuIcon name="team" />
+                  <span>Equipe</span>
+                </button>
+              )}
+
               {canViewAgenda && (
                 <div className="menu-group">
                   <button
@@ -396,16 +424,6 @@ function Atendimentos() {
                 </div>
               )}
 
-              {canViewTeam && (
-                <button
-                  type="button"
-                  onClick={() => (window.location.href = "/equipe")}
-                >
-                  <MenuIcon name="team" />
-                  <span>Equipe</span>
-                </button>
-              )}
-
               {canViewServices && (
                 <div className="menu-group">
                   <button
@@ -439,25 +457,20 @@ function Atendimentos() {
                         <span>Lista de serviços</span>
                       </button>
 
-                      <button
-                        type="button"
-                        onClick={() =>
-                          (window.location.href = "/categorias-servicos")
-                        }
-                      >
-                        <MenuIcon name="categories" />
-                        <span>Categorias</span>
-                      </button>
+                      {canViewCategories && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            (window.location.href = "/categorias-servicos")
+                          }
+                        >
+                          <MenuIcon name="categories" />
+                          <span>Categorias</span>
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
-              )}
-
-              {canViewFinance && (
-                <button type="button">
-                  <MenuIcon name="finance" />
-                  <span>Financeiro</span>
-                </button>
               )}
 
               {canManageSettings && (

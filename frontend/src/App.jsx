@@ -13,6 +13,7 @@ import Configuracoes from "./pages/configuracoes/configuracoes";
 import ClienteInicio from "./pages/cliente/clienteInicio";
 import ClienteCategorias from "./pages/cliente/clienteCategorias";
 import ClienteServicos from "./pages/cliente/clienteServicos";
+import Clientes from "./pages/clientes/Clientes";
 
 function App() {
   const path = window.location.pathname;
@@ -36,6 +37,10 @@ function App() {
 
   if (checkingAuth) {
     return null;
+  }
+
+  if (path === "/clientes") {
+    return <Clientes />;
   }
 
   const isProtectedRoute = path !== "/";

@@ -67,6 +67,7 @@ function Agenda() {
   const canViewTeam = hasPermission("ver_equipe", userPermissions);
   const canViewAgenda = hasPermission("ver_agenda", userPermissions);
   const canEditAgenda = hasPermission("editar_agenda", userPermissions);
+  const canViewCustomers = hasPermission("ver_cliente", userPermissions);
 
   const canViewFinance = userRole === "owner" || userRole === "super_admin";
 
@@ -354,6 +355,33 @@ function Agenda() {
                 </button>
               )}
 
+              {canViewFinance && (
+                <button type="button">
+                  <MenuIcon name="finance" />
+                  <span>Financeiro</span>
+                </button>
+              )}
+
+              {canViewCustomers && (
+                <button
+                  type="button"
+                  onClick={() => (window.location.href = "/clientes")}
+                >
+                  <MenuIcon name="customers" />
+                  <span>Clientes</span>
+                </button>
+              )}
+
+              {canViewTeam && (
+                <button
+                  type="button"
+                  onClick={() => (window.location.href = "/equipe")}
+                >
+                  <MenuIcon name="team" />
+                  <span>Equipe</span>
+                </button>
+              )}
+
               {canViewAgenda && (
                 <div className="menu-group">
                   <button
@@ -397,16 +425,6 @@ function Agenda() {
                     </div>
                   )}
                 </div>
-              )}
-
-              {canViewTeam && (
-                <button
-                  type="button"
-                  onClick={() => (window.location.href = "/equipe")}
-                >
-                  <MenuIcon name="team" />
-                  <span>Equipe</span>
-                </button>
               )}
 
               {canViewServices && (
@@ -456,13 +474,6 @@ function Agenda() {
                     </div>
                   )}
                 </div>
-              )}
-
-              {canViewFinance && (
-                <button type="button">
-                  <MenuIcon name="finance" />
-                  <span>Financeiro</span>
-                </button>
               )}
 
               {canManageSettings && (

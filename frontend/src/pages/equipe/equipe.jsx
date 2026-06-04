@@ -43,6 +43,7 @@ function Equipe() {
   );
 
   const canViewDashboard = hasPermission("ver_dashboard", userPermissions);
+  const canViewCustomers = hasPermission("ver_cliente", userPermissions);
   const canViewQueue = hasPermission("ver_fila", userPermissions);
   const canViewServices = hasPermission("ver_servicos", userPermissions);
   const canViewCategories = hasPermission("ver_categorias", userPermissions);
@@ -324,6 +325,8 @@ function Equipe() {
         "cancelar_atendimento",
       ],
 
+      ver_cliente: ["editar_cliente"],
+
       ver_agenda: ["editar_agenda"],
 
       ver_servicos: [
@@ -363,6 +366,8 @@ function Equipe() {
 
       editar_agenda: ["ver_agenda"],
 
+      editar_cliente: ["ver_cliente"],
+
       criar_servico: ["ver_servicos"],
       editar_servico: ["ver_servicos"],
       excluir_servico: ["ver_servicos"],
@@ -390,12 +395,12 @@ function Equipe() {
         if (permissionCode === "ver_agenda") {
           permissionsSet.delete("editar_agenda");
         }
+
+        if (permissionCode === "ver_cliente") {
+          permissionsSet.delete("editar_cliente");
+        }
       } else {
         permissionsSet.add(permissionCode);
-
-        if (permissionCode === "editar_agenda") {
-          permissionsSet.add("ver_agenda");
-        }
 
         const dependencies = getPermissionDependencies(permissionCode);
 
@@ -424,6 +429,9 @@ function Equipe() {
       editar_atendimento: 3,
       alterar_status: 4,
       cancelar_atendimento: 5,
+
+      ver_cliente: 1,
+      editar_cliente: 2,
 
       ver_agenda: 1,
       editar_agenda: 2,
@@ -605,6 +613,30 @@ function Equipe() {
                 </button>
               )}
 
+              {canViewFinance && (
+                <button type="button">
+                  <MenuIcon name="finance" />
+                  <span>Financeiro</span>
+                </button>
+              )}
+
+              {canViewCustomers && (
+                <button
+                  type="button"
+                  onClick={() => (window.location.href = "/clientes")}
+                >
+                  <MenuIcon name="customers" />
+                  <span>Clientes</span>
+                </button>
+              )}
+
+              {canViewTeam && (
+                <button className="active" type="button">
+                  <MenuIcon name="team" />
+                  <span>Equipe</span>
+                </button>
+              )}
+
               {canViewAgenda && (
                 <div className="menu-group">
                   <button
@@ -650,13 +682,6 @@ function Equipe() {
                     </div>
                   )}
                 </div>
-              )}
-
-              {canViewTeam && (
-                <button className="active" type="button">
-                  <MenuIcon name="team" />
-                  <span>Equipe</span>
-                </button>
               )}
 
               {canViewServices && (
@@ -706,13 +731,6 @@ function Equipe() {
                     </div>
                   )}
                 </div>
-              )}
-
-              {canViewFinance && (
-                <button type="button">
-                  <MenuIcon name="finance" />
-                  <span>Financeiro</span>
-                </button>
               )}
 
               {canManageSettings && (

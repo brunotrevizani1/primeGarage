@@ -23,12 +23,12 @@ async function listEmployees(req, res) {
       [businessId],
     );
 
-    res.json({
+    return res.json({
       mensagem: "Funcionários listados com sucesso.",
       employees,
     });
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       mensagem: "Erro ao listar funcionários.",
       erro: error.message,
     });
@@ -84,8 +84,8 @@ function normalizePermissions(permissions = []) {
     normalized.add("ver_agenda");
   }
 
-  if (normalized.has("gerenciar_configuracoes")) {
-    normalized.add("gerenciar_configuracoes");
+  if (normalized.has("editar_cliente")) {
+    normalized.add("ver_cliente");
   }
 
   return Array.from(normalized);
@@ -114,7 +114,7 @@ async function createEmployee(req, res) {
 
     const cleanName = name.trim();
     const cleanEmail = email.trim().toLowerCase();
-    const cleanPhone = phone.trim();
+    const cleanPhone = String(phone).replace(/\D/g, "");
     const hashedPassword = await bcrypt.hash(password, 10);
     const normalizedPermissions = normalizePermissions(permissions);
 
@@ -259,6 +259,12 @@ async function updateEmployee(req, res) {
     const { id } = req.params;
     const { name, email, phone, password } = req.body;
 
+    if (!businessId) {
+      return res.status(400).json({
+        mensagem: "Usuário não está vinculado a nenhum lavajato.",
+      });
+    }
+
     if (!name || !email || !phone) {
       return res.status(400).json({
         mensagem: "Nome, e-mail e telefone são obrigatórios.",
@@ -267,6 +273,10 @@ async function updateEmployee(req, res) {
 
     await connection.beginTransaction();
 
+    const cleanName = name.trim();
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPhone = String(phone).replace(/\D/g, "");
+
     const [employees] = await connection.query(
       `
       SELECT id
@@ -274,7 +284,6 @@ async function updateEmployee(req, res) {
       WHERE id = ?
       AND business_id = ?
       AND role = 'employee'
-      AND status = 'active'
       LIMIT 1
       `,
       [id, businessId],
@@ -288,7 +297,7 @@ async function updateEmployee(req, res) {
       });
     }
 
-    const [emailUsers] = await connection.query(
+    const [emailExists] = await connection.query(
       `
       SELECT id
       FROM users
@@ -296,19 +305,19 @@ async function updateEmployee(req, res) {
       AND id <> ?
       LIMIT 1
       `,
-      [email, id],
+      [cleanEmail, id],
     );
 
-    if (emailUsers.length > 0) {
+    if (emailExists.length > 0) {
       await connection.rollback();
 
       return res.status(400).json({
-        mensagem: "Este e-mail já está sendo usado por outro usuário.",
+        mensagem: "Já existe outro usuário com esse e-mail.",
       });
     }
 
     if (password && password.trim()) {
-      const hashedPassword = await bcrypt.hash(password, 10);
+      const hashedPassword = await bcrypt.hash(password.trim(), 10);
 
       await connection.query(
         `
@@ -317,14 +326,7 @@ async function updateEmployee(req, res) {
         WHERE id = ?
         AND business_id = ?
         `,
-        [
-          name.trim(),
-          email.trim(),
-          phone.trim(),
-          hashedPassword,
-          id,
-          businessId,
-        ],
+        [cleanName, cleanEmail, cleanPhone, hashedPassword, id, businessId],
       );
     } else {
       await connection.query(
@@ -334,19 +336,19 @@ async function updateEmployee(req, res) {
         WHERE id = ?
         AND business_id = ?
         `,
-        [name.trim(), email.trim(), phone.trim(), id, businessId],
+        [cleanName, cleanEmail, cleanPhone, id, businessId],
       );
     }
 
     await connection.commit();
 
-    res.json({
+    return res.json({
       mensagem: "Funcionário atualizado com sucesso.",
     });
   } catch (error) {
     await connection.rollback();
 
-    res.status(500).json({
+    return res.status(500).json({
       mensagem: "Erro ao atualizar funcionário.",
       erro: error.message,
     });
@@ -377,11 +379,11 @@ async function deleteEmployee(req, res) {
       });
     }
 
-    res.json({
+    return res.json({
       mensagem: "Funcionário excluído com sucesso.",
     });
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       mensagem: "Erro ao excluir funcionário.",
       erro: error.message,
     });
@@ -392,25 +394,52 @@ async function listPermissions(req, res) {
   try {
     const [permissions] = await db.query(
       `
-  SELECT id, code, name, group_name
-  FROM permissions
-  ORDER BY 
-    group_name ASC,
-    CASE
-      WHEN code = 'ver_agenda' THEN 1
-      WHEN code = 'editar_agenda' THEN 2
-      ELSE 99
-    END ASC,
-    name ASC
-  `,
+      SELECT id, code, name, group_name
+      FROM permissions
+      ORDER BY 
+        group_name ASC,
+        CASE
+          WHEN code = 'ver_cliente' THEN 1
+          WHEN code = 'editar_cliente' THEN 2
+
+          WHEN code = 'ver_agenda' THEN 1
+          WHEN code = 'editar_agenda' THEN 2
+
+          WHEN code = 'ver_dashboard' THEN 1
+
+          WHEN code = 'ver_fila' THEN 1
+          WHEN code = 'criar_atendimento' THEN 2
+          WHEN code = 'editar_atendimento' THEN 3
+          WHEN code = 'alterar_status' THEN 4
+          WHEN code = 'cancelar_atendimento' THEN 5
+
+          WHEN code = 'ver_servicos' THEN 1
+          WHEN code = 'criar_servico' THEN 2
+          WHEN code = 'editar_servico' THEN 3
+          WHEN code = 'excluir_servico' THEN 4
+
+          WHEN code = 'ver_categorias' THEN 5
+          WHEN code = 'criar_categoria' THEN 6
+          WHEN code = 'editar_categoria' THEN 7
+          WHEN code = 'excluir_categoria' THEN 8
+
+          WHEN code = 'ver_equipe' THEN 1
+          WHEN code = 'criar_funcionario' THEN 2
+          WHEN code = 'editar_funcionario' THEN 3
+          WHEN code = 'excluir_funcionario' THEN 4
+
+          ELSE 99
+        END ASC,
+        name ASC
+      `,
     );
 
-    res.json({
+    return res.json({
       mensagem: "Permissões listadas com sucesso.",
       permissions,
     });
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       mensagem: "Erro ao listar permissões.",
       erro: error.message,
     });
@@ -450,12 +479,12 @@ async function getEmployeePermissions(req, res) {
       [id],
     );
 
-    res.json({
+    return res.json({
       mensagem: "Permissões do funcionário listadas com sucesso.",
       permissions: permissions.map((permission) => permission.code),
     });
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       mensagem: "Erro ao buscar permissões do funcionário.",
       erro: error.message,
     });
@@ -531,13 +560,13 @@ async function updateEmployeePermissions(req, res) {
 
     await connection.commit();
 
-    res.json({
+    return res.json({
       mensagem: "Permissões atualizadas com sucesso.",
     });
   } catch (error) {
     await connection.rollback();
 
-    res.status(500).json({
+    return res.status(500).json({
       mensagem: "Erro ao atualizar permissões.",
       erro: error.message,
     });
@@ -575,13 +604,13 @@ async function getMyPermissions(req, res) {
       [user.id],
     );
 
-    res.json({
+    return res.json({
       mensagem: "Permissões listadas com sucesso.",
       role: user.role,
       permissions: permissions.map((permission) => permission.code),
     });
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       mensagem: "Erro ao buscar permissões do usuário.",
       erro: error.message,
     });

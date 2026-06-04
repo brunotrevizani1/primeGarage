@@ -50,6 +50,7 @@ function Configuracoes() {
   const canViewServices = hasPermission("ver_servicos", userPermissions);
   const canViewCategories = hasPermission("ver_categorias", userPermissions);
   const canViewTeam = hasPermission("ver_equipe", userPermissions);
+  const canViewCustomers = hasPermission("ver_cliente", userPermissions);
   const canManageSettings = hasPermission(
     "gerenciar_configuracoes",
     userPermissions,
@@ -250,6 +251,33 @@ function Configuracoes() {
                 </button>
               )}
 
+              {canViewFinance && (
+                <button type="button">
+                  <MenuIcon name="finance" />
+                  <span>Financeiro</span>
+                </button>
+              )}
+
+              {canViewCustomers && (
+                <button
+                  type="button"
+                  onClick={() => (window.location.href = "/clientes")}
+                >
+                  <MenuIcon name="customers" />
+                  <span>Clientes</span>
+                </button>
+              )}
+
+              {canViewTeam && (
+                <button
+                  type="button"
+                  onClick={() => (window.location.href = "/equipe")}
+                >
+                  <MenuIcon name="team" />
+                  <span>Equipe</span>
+                </button>
+              )}
+
               {canViewAgenda && (
                 <div className="menu-group">
                   <button
@@ -295,16 +323,6 @@ function Configuracoes() {
                     </div>
                   )}
                 </div>
-              )}
-
-              {canViewTeam && (
-                <button
-                  type="button"
-                  onClick={() => (window.location.href = "/equipe")}
-                >
-                  <MenuIcon name="team" />
-                  <span>Equipe</span>
-                </button>
               )}
 
               {canViewServices && (
@@ -354,13 +372,6 @@ function Configuracoes() {
                     </div>
                   )}
                 </div>
-              )}
-
-              {canViewFinance && (
-                <button type="button">
-                  <MenuIcon name="finance" />
-                  <span>Financeiro</span>
-                </button>
               )}
 
               {canManageSettings && (

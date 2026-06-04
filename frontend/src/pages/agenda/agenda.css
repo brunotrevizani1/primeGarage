@@ -336,19 +336,27 @@
   background: rgba(20, 33, 29, 0.38);
   z-index: 20;
   display: flex;
+  align-items: stretch;
 }
 
 .side-menu {
-  width: 280px;
-  max-width: 82%;
-  min-height: 100vh;
+  width: 310px;
+  max-width: 82vw;
+  height: 100dvh;
+  max-height: 100dvh;
   background: #ffffff;
-  padding: 20px;
-  border-radius: 0 28px 28px 0;
+  border-radius: 0 26px 26px 0;
+  padding: 24px 18px;
+  box-shadow: 18px 0 40px rgba(20, 33, 29, 0.16);
   animation: slideMenu 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .side-menu-header {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -366,24 +374,38 @@
   border: none;
   border-radius: 12px;
   background: #f1f4f2;
+  color: #14211d;
   font-size: 1.4rem;
   cursor: pointer;
 }
 
 .side-menu-links {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
+
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.side-menu-links::-webkit-scrollbar {
+  display: none;
 }
 
 .side-menu-links button,
 .logout-button {
   width: 100%;
+  min-height: 48px;
   height: 48px;
   border: none;
   border-radius: 16px;
   text-align: left;
   padding: 0 14px;
+  font-size: 0.95rem;
   font-weight: 800;
   cursor: pointer;
 }
@@ -391,17 +413,14 @@
 .side-menu-links button {
   background: transparent;
   color: #64716d;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .side-menu-links button.active {
   background: #dbe7df;
   color: #2f5249;
-}
-
-.logout-button {
-  margin-top: 24px;
-  background: #fee2e2;
-  color: #b91c1c;
 }
 
 .menu-group {
@@ -413,17 +432,23 @@
 .menu-parent-button {
   display: flex !important;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 10px;
 }
 
-.menu-parent-button span {
-  display: block;
+.menu-parent-button span,
+.side-menu-links button span,
+.submenu-links button span {
+  flex: 1;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .submenu-links {
-  margin-left: 12px;
-  padding-left: 10px;
+  margin-left: 14px;
+  padding-left: 12px;
   border-left: 2px solid #dbe7df;
   display: flex;
   flex-direction: column;
@@ -431,8 +456,10 @@
 }
 
 .submenu-links button {
-  height: 40px;
-  font-size: 0.86rem;
+  min-height: 48px;
+  height: 48px;
+  font-size: 0.95rem;
+  border-radius: 16px;
 }
 
 .submenu-links button.active {
@@ -440,15 +467,35 @@
   color: #2f5249;
 }
 
+.menu-icon {
+  width: 19px;
+  height: 19px;
+  min-width: 19px;
+  fill: currentColor;
+}
+
 .submenu-arrow {
   width: 18px;
   height: 18px;
+  min-width: 18px;
   fill: currentColor;
   transition: 0.2s ease;
+  margin-left: auto;
 }
 
 .submenu-arrow.open {
   transform: rotate(180deg);
+}
+
+.logout-button {
+  flex-shrink: 0;
+  margin-top: 16px;
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.menu-parent-button span {
+  display: block;
 }
 
 .agenda-loading {
