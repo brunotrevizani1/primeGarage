@@ -13,12 +13,17 @@ import Configuracoes from "./pages/configuracoes/configuracoes";
 import ClienteInicio from "./pages/cliente/clienteInicio";
 import ClienteCategorias from "./pages/cliente/clienteCategorias";
 import ClienteServicos from "./pages/cliente/clienteServicos";
+import ClienteDados from "./pages/cliente/clienteDados";
 import Clientes from "./pages/clientes/Clientes";
 
 function App() {
   const path = window.location.pathname;
+  const pathParts = path.split("/").filter(Boolean);
+
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  const isPublicCustomerRoute = pathParts[0] === "agendar" && pathParts[1];
 
   useEffect(() => {
     async function checkAuth() {
@@ -39,37 +44,29 @@ function App() {
     return null;
   }
 
-  if (path === "/clientes") {
-    return <Clientes />;
+  // ROTAS PÚBLICAS DO CLIENTE
+  if (isPublicCustomerRoute && !pathParts[2]) {
+    return <ClienteInicio />;
   }
 
+  if (isPublicCustomerRoute && pathParts[2] === "categorias") {
+    return <ClienteCategorias />;
+  }
+
+  if (isPublicCustomerRoute && pathParts[2] === "servicos") {
+    return <ClienteServicos />;
+  }
+
+  if (isPublicCustomerRoute && pathParts[2] === "dados") {
+    return <ClienteDados />;
+  }
+
+  // ROTAS PROTEGIDAS
   const isProtectedRoute = path !== "/";
 
   if (isProtectedRoute && !isAuthenticated) {
     window.location.href = "/";
     return null;
-  }
-
-  const pathParts = path.split("/").filter(Boolean);
-
-  if (pathParts[0] === "agendar" && pathParts[1] && !pathParts[2]) {
-    return <ClienteInicio />;
-  }
-
-  if (
-    pathParts[0] === "agendar" &&
-    pathParts[1] &&
-    pathParts[2] === "categorias"
-  ) {
-    return <ClienteCategorias />;
-  }
-
-  if (
-    pathParts[0] === "agendar" &&
-    pathParts[1] &&
-    pathParts[2] === "servicos"
-  ) {
-    return <ClienteServicos />;
   }
 
   if (path === "/dashboard") return <Dashboard />;
@@ -81,6 +78,7 @@ function App() {
   if (path === "/servicos") return <Servicos />;
   if (path === "/agenda") return <Agenda />;
   if (path === "/configuracoes") return <Configuracoes />;
+  if (path === "/clientes") return <Clientes />;
 
   return <Login />;
 }

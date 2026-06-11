@@ -1,5 +1,77 @@
 const db = require("../database/connection");
 
+async function getPublicVehicleByPlate(req, res) {
+  try {
+    const { businessId, plate } = req.params;
+
+    if (!businessId) {
+      return res.status(400).json({
+        mensagem: "Lava-jato não informado.",
+      });
+    }
+
+    if (!plate) {
+      return res.status(400).json({
+        mensagem: "Placa não informada.",
+      });
+    }
+
+    const cleanPlate = String(plate || "")
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, "")
+      .slice(0, 7);
+
+    if (cleanPlate.length < 7) {
+      return res.status(400).json({
+        mensagem: "Informe uma placa válida.",
+      });
+    }
+
+    const [vehicles] = await db.query(
+      `
+      SELECT
+        v.id,
+        v.plate,
+        v.model,
+        v.color,
+        c.name AS customer_name,
+        c.phone AS customer_phone
+      FROM vehicles v
+      INNER JOIN customers c ON c.id = v.customer_id
+      WHERE v.business_id = ?
+      AND v.plate = ?
+      LIMIT 1
+      `,
+      [businessId, cleanPlate],
+    );
+
+    if (vehicles.length === 0) {
+      return res.status(404).json({
+        mensagem: "Veículo não encontrado.",
+      });
+    }
+
+    const vehicle = vehicles[0];
+
+    return res.json({
+      mensagem: "Veículo encontrado com sucesso.",
+      vehicle: {
+        id: vehicle.id,
+        plate: vehicle.plate,
+        model: vehicle.model,
+        color: vehicle.color,
+        customerName: vehicle.customer_name,
+        customerPhone: vehicle.customer_phone,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({
+      mensagem: "Erro ao buscar veículo.",
+      erro: error.message,
+    });
+  }
+}
+
 async function getCustomerPage(req, res) {
   try {
     const { businessId } = req.params;
@@ -238,4 +310,5 @@ module.exports = {
   getCustomerPage,
   listPublicCategories,
   listPublicServicesByCategory,
+  getPublicVehicleByPlate,
 };

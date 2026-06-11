@@ -366,29 +366,6 @@ async function updateCustomer(req, res) {
       [cleanPlate, vehicleModel.trim(), vehicleColor.trim(), id, businessId],
     );
 
-    await connection.query(
-      `
-      UPDATE orders
-      SET
-        vehicle_plate = ?,
-        vehicle_model = ?,
-        vehicle_color = ?,
-        customer_name = ?,
-        customer_phone = ?
-      WHERE business_id = ?
-      AND vehicle_plate = ?
-      `,
-      [
-        cleanPlate,
-        vehicleModel.trim(),
-        vehicleColor.trim(),
-        customerName.trim(),
-        cleanPhone,
-        businessId,
-        vehicle.plate,
-      ],
-    );
-
     await connection.commit();
 
     return res.json({

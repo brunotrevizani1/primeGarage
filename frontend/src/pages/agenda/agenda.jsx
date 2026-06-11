@@ -27,7 +27,10 @@ function getInitialAgendaTab() {
   const params = new URLSearchParams(window.location.search);
   const tab = params.get("tab");
 
-  return tab === "blocks" ? "blocks" : "hours";
+  if (tab === "blocks") return "blocks";
+  if (tab === "settings") return "settings";
+
+  return "hours";
 }
 
 function Agenda() {
@@ -43,6 +46,20 @@ function Agenda() {
   const [settingsMenuOpen, setSettingsMenuOpen] = useState(false);
   const [activeAgendaTab, setActiveAgendaTab] = useState(getInitialAgendaTab());
   const [selectedWorkingWeekday, setSelectedWorkingWeekday] = useState(1);
+
+  const [selectedScheduleType, setSelectedScheduleType] =
+    useState("time_slots");
+  const [scheduleModalType, setScheduleModalType] = useState(null);
+
+  const [scheduleSettings, setScheduleSettings] = useState({
+    schedule_type: "time_slots",
+    slot_interval_minutes: 60,
+    vehicles_per_slot: 1,
+    daily_limit: 20,
+    morning_limit: 8,
+    afternoon_limit: 10,
+    night_limit: 0,
+  });
 
   const [userPermissions, setUserPermissions] = useState(getSavedPermissions());
   const [userRole, setUserRole] = useState(getSavedRole());
@@ -76,6 +93,7 @@ function Agenda() {
     setMenuOpen(false);
     window.history.replaceState(null, "", `/agenda?tab=${tab}`);
   }
+
   function getFirstAllowedPath(permissions, role) {
     if (role === "owner" || role === "super_admin") {
       return "/dashboard";
@@ -122,6 +140,45 @@ function Agenda() {
       ...currentForm,
       [field]: value,
     }));
+  }
+
+  function updateScheduleSetting(field, value) {
+    setScheduleSettings((currentSettings) => ({
+      ...currentSettings,
+      [field]: value,
+    }));
+  }
+
+  function openScheduleModal(type) {
+    if (!canEditAgenda) return;
+
+    setSelectedScheduleType(type);
+    setScheduleSettings((currentSettings) => ({
+      ...currentSettings,
+      schedule_type: type,
+    }));
+    setScheduleModalType(type);
+  }
+
+  function closeScheduleModal() {
+    setScheduleModalType(null);
+  }
+
+  function saveScheduleType() {
+    if (!canEditAgenda) {
+      setError("Você não possui permissão para editar a agenda.");
+      return;
+    }
+
+    setSelectedScheduleType(scheduleSettings.schedule_type);
+    setScheduleModalType(null);
+  }
+
+  function getScheduleTypeTitle(type) {
+    if (type === "periods") return "Agenda por período";
+    if (type === "daily") return "Agenda por dia";
+
+    return "Agenda por horário";
   }
 
   function formatDate(date) {
@@ -422,6 +479,17 @@ function Agenda() {
                         <MenuIcon name="blocks" />
                         <span>Bloqueios de agenda</span>
                       </button>
+
+                      <button
+                        type="button"
+                        className={
+                          activeAgendaTab === "settings" ? "active" : ""
+                        }
+                        onClick={() => changeAgendaTab("settings")}
+                      >
+                        <MenuIcon name="settings" />
+                        <span>Configuração da agenda</span>
+                      </button>
                     </div>
                   )}
                 </div>
@@ -534,6 +602,164 @@ function Agenda() {
               Sair da conta
             </button>
           </aside>
+        </div>
+      )}
+
+      {scheduleModalType && (
+        <div className="agenda-modal-overlay" onClick={closeScheduleModal}>
+          <section
+            className="agenda-modal"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="agenda-modal-header">
+              <div>
+                <span>Configuração</span>
+                <strong>{getScheduleTypeTitle(scheduleModalType)}</strong>
+              </div>
+
+              <button type="button" onClick={closeScheduleModal}>
+                ×
+              </button>
+            </div>
+
+            {scheduleModalType === "time_slots" && (
+              <div className="agenda-modal-content">
+                <p>
+                  Configure os horários fixos disponíveis para o cliente
+                  escolher no agendamento.
+                </p>
+
+                <div className="time-grid">
+                  <div className="form-group">
+                    <label>Intervalo</label>
+                    <select
+                      value={scheduleSettings.slot_interval_minutes}
+                      onChange={(event) =>
+                        updateScheduleSetting(
+                          "slot_interval_minutes",
+                          Number(event.target.value),
+                        )
+                      }
+                    >
+                      <option value={30}>30 minutos</option>
+                      <option value={45}>45 minutos</option>
+                      <option value={60}>60 minutos</option>
+                      <option value={90}>90 minutos</option>
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label>Carros por horário</label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={scheduleSettings.vehicles_per_slot}
+                      onChange={(event) =>
+                        updateScheduleSetting(
+                          "vehicles_per_slot",
+                          Number(event.target.value),
+                        )
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {scheduleModalType === "periods" && (
+              <div className="agenda-modal-content">
+                <div className="period-modal-list">
+                  <div className="period-modal-card">
+                    <strong>Manhã</strong>
+
+                    <div className="form-group">
+                      <label>Limite de carros</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={scheduleSettings.morning_limit}
+                        onChange={(event) =>
+                          updateScheduleSetting(
+                            "morning_limit",
+                            Number(event.target.value),
+                          )
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  <div className="period-modal-card">
+                    <strong>Tarde</strong>
+
+                    <div className="form-group">
+                      <label>Limite de carros</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={scheduleSettings.afternoon_limit}
+                        onChange={(event) =>
+                          updateScheduleSetting(
+                            "afternoon_limit",
+                            Number(event.target.value),
+                          )
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  <div className="period-modal-card">
+                    <strong>Noite</strong>
+
+                    <div className="form-group">
+                      <label>Limite de carros</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={scheduleSettings.night_limit}
+                        onChange={(event) =>
+                          updateScheduleSetting(
+                            "night_limit",
+                            Number(event.target.value),
+                          )
+                        }
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <small className="modal-helper">
+                  Use 0 para deixar um período desativado.
+                </small>
+              </div>
+            )}
+
+            {scheduleModalType === "daily" && (
+              <div className="agenda-modal-content">
+                <div className="form-group">
+                  <label>Limite diário de carros</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={scheduleSettings.daily_limit}
+                    onChange={(event) =>
+                      updateScheduleSetting(
+                        "daily_limit",
+                        Number(event.target.value),
+                      )
+                    }
+                  />
+                </div>
+              </div>
+            )}
+
+            <button
+              type="button"
+              className="save-agenda-button modal-save-button"
+              onClick={saveScheduleType}
+            >
+              Salvar configuração
+            </button>
+          </section>
         </div>
       )}
 
@@ -864,6 +1090,91 @@ function Agenda() {
                 ))}
               </div>
             )}
+          </section>
+        )}
+
+        {activeAgendaTab === "settings" && (
+          <section className="agenda-section">
+            <div className="section-heading">
+              <div>
+                <h2>Configuração da agenda</h2>
+              </div>
+            </div>
+
+            <div className="schedule-type-list">
+              <button
+                type="button"
+                className={
+                  selectedScheduleType === "time_slots"
+                    ? "schedule-type-card active"
+                    : "schedule-type-card"
+                }
+                onClick={() => openScheduleModal("time_slots")}
+              >
+                <div className="schedule-type-top">
+                  <div>
+                    <strong>Agenda por horário</strong>
+                    <p>
+                      O cliente escolhe um horário específico. Ideal para
+                      lava-jatos que trabalham com horários marcados.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="schedule-type-example">
+                  {scheduleSettings.slot_interval_minutes} min •{" "}
+                  {scheduleSettings.vehicles_per_slot} carro(s) por horário
+                </div>
+              </button>
+
+              <button
+                type="button"
+                className={
+                  selectedScheduleType === "periods"
+                    ? "schedule-type-card active"
+                    : "schedule-type-card"
+                }
+                onClick={() => openScheduleModal("periods")}
+              >
+                <div className="schedule-type-top">
+                  <div>
+                    <strong>Agenda por período</strong>
+                    <p>
+                      O cliente escolhe manhã, tarde ou noite. Ideal para
+                      lava-jatos que recebem vários carros por período.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="schedule-type-example">
+                  Manhã • Tarde • Noite
+                </div>
+              </button>
+
+              <button
+                type="button"
+                className={
+                  selectedScheduleType === "daily"
+                    ? "schedule-type-card active"
+                    : "schedule-type-card"
+                }
+                onClick={() => openScheduleModal("daily")}
+              >
+                <div className="schedule-type-top">
+                  <div>
+                    <strong>Agenda por dia</strong>
+                    <p>
+                      O cliente escolhe apenas o dia. Ideal para controlar o
+                      limite diário sem prometer horário específico.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="schedule-type-example">
+                  Limite de {scheduleSettings.daily_limit} carros por dia
+                </div>
+              </button>
+            </div>
           </section>
         )}
       </section>
