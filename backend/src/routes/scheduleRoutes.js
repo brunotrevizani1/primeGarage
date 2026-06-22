@@ -6,6 +6,8 @@ const {
   listScheduleBlocks,
   createScheduleBlock,
   deleteScheduleBlock,
+  getScheduleSettings,
+  updateScheduleSettings,
 } = require("../controllers/scheduleController");
 
 const authMiddleware = require("../middlewares/authMiddleware");
@@ -46,6 +48,20 @@ router.delete(
   authMiddleware,
   permissionMiddleware("editar_agenda"),
   deleteScheduleBlock,
+);
+
+router.get(
+  "/settings",
+  authMiddleware,
+  permissionMiddleware("ver_agenda"),
+  getScheduleSettings,
+);
+
+router.put(
+  "/settings",
+  authMiddleware,
+  permissionMiddleware("editar_agenda"),
+  updateScheduleSettings,
 );
 
 module.exports = router;

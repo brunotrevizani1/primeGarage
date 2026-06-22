@@ -445,10 +445,114 @@ async function deleteScheduleBlock(req, res) {
   }
 }
 
+const defaultScheduleSettings = {
+  schedule_type: "time_slots",
+  slot_interval_minutes: 60,
+  vehicles_per_slot: 1,
+  daily_limit: 20,
+  morning_limit: 8,
+  afternoon_limit: 10,
+  night_limit: 0,
+};
+
+async function getScheduleSettings(req, res) {
+  try {
+    const businessId = req.user.business_id;
+
+    const [rows] = await db.query(
+      `
+      SELECT
+        schedule_type,
+        slot_interval_minutes,
+        vehicles_per_slot,
+        daily_limit,
+        morning_limit,
+        afternoon_limit,
+        night_limit
+      FROM business_schedule_settings
+      WHERE business_id = ?
+      LIMIT 1
+      `,
+      [businessId],
+    );
+
+    return res.json({
+      mensagem: "Configurações de agenda carregadas com sucesso.",
+      settings: rows[0] || defaultScheduleSettings,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      mensagem: "Erro ao carregar configurações de agenda.",
+      erro: error.message,
+    });
+  }
+}
+
+async function updateScheduleSettings(req, res) {
+  try {
+    const businessId = req.user.business_id;
+
+    const {
+      schedule_type,
+      slot_interval_minutes,
+      vehicles_per_slot,
+      daily_limit,
+      morning_limit,
+      afternoon_limit,
+      night_limit,
+    } = req.body;
+
+    const allowedTypes = ["time_slots", "periods", "daily"];
+
+    if (!allowedTypes.includes(schedule_type)) {
+      return res.status(400).json({
+        mensagem: "Tipo de agenda inválido.",
+      });
+    }
+
+    await db.query(
+      `
+      INSERT INTO business_schedule_settings
+      (business_id, schedule_type, slot_interval_minutes, vehicles_per_slot, daily_limit, morning_limit, afternoon_limit, night_limit)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      ON DUPLICATE KEY UPDATE
+        schedule_type = VALUES(schedule_type),
+        slot_interval_minutes = VALUES(slot_interval_minutes),
+        vehicles_per_slot = VALUES(vehicles_per_slot),
+        daily_limit = VALUES(daily_limit),
+        morning_limit = VALUES(morning_limit),
+        afternoon_limit = VALUES(afternoon_limit),
+        night_limit = VALUES(night_limit)
+      `,
+      [
+        businessId,
+        schedule_type,
+        slot_interval_minutes || 60,
+        vehicles_per_slot || 1,
+        daily_limit || 20,
+        morning_limit || 8,
+        afternoon_limit || 10,
+        night_limit || 0,
+      ],
+    );
+
+    return res.json({
+      mensagem: "Configurações de agenda salvas com sucesso.",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      mensagem: "Erro ao salvar configurações de agenda.",
+      erro: error.message,
+    });
+  }
+}
+
 module.exports = {
   listWorkingHours,
   updateWorkingHours,
   listScheduleBlocks,
   createScheduleBlock,
   deleteScheduleBlock,
+  getScheduleSettings,
+  updateScheduleSettings,
 };

@@ -14,7 +14,10 @@
     "create-operational-tables": "node src/database/createOperationalTables.js",
     "create-finance-tables": "node src/database/createFinanceTables.js",
     "create-service-category-tables": "node src/database/createServiceCategoryTables.js",
-    "create-team-tables": "node src/database/createTeamTables.js"
+    "create-team-tables": "node src/database/createTeamTables.js",
+    "create-schedule-settings-table": "node src/database/createScheduleSettingsTable.js",
+    "add-schedule-columns": "node src/database/addScheduleColumnsToOrders.js",
+    "add-origin-column": "node src/database/addOriginColumn.js"
   },
   "keywords": [],
   "author": "",
@@ -22,11 +25,11 @@
   "type": "commonjs",
   "dependencies": {
     "bcrypt": "^6.0.0",
-    "bcryptjs": "^3.0.3",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "express-rate-limit": "^8.5.2",
     "jsonwebtoken": "^9.0.3",
     "mysql2": "^3.22.3"
   },

@@ -306,9 +306,494 @@ async function listPublicCategories(req, res) {
   }
 }
 
+const defaultScheduleSettings = {
+  schedule_type: "time_slots",
+  slot_interval_minutes: 60,
+  vehicles_per_slot: 1,
+  daily_limit: 20,
+  morning_limit: 8,
+  afternoon_limit: 10,
+  night_limit: 0,
+};
+
+function toBoolean(value) {
+  return value === true || value === 1 || value === "1";
+}
+
+function timeToMinutes(timeStr) {
+  if (!timeStr) return null;
+  const parts = String(timeStr).split(":");
+  return Number(parts[0]) * 60 + Number(parts[1]);
+}
+
+function minutesToTime(total) {
+  const h = Math.floor(total / 60);
+  const m = total % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+function generateTimeSlots(dayConfig, intervalMinutes) {
+  const openMins = timeToMinutes(dayConfig.open_time);
+  const closeMins = timeToMinutes(dayConfig.close_time);
+  if (openMins === null || closeMins === null) return [];
+
+  const hasLunch = toBoolean(dayConfig.has_lunch_break);
+  const lunchStartMins = hasLunch ? timeToMinutes(dayConfig.lunch_start) : null;
+  const lunchEndMins = hasLunch ? timeToMinutes(dayConfig.lunch_end) : null;
+
+  const slots = [];
+  let current = openMins;
+
+  while (current + intervalMinutes <= closeMins) {
+    const slotEnd = current + intervalMinutes;
+    const overlapsLunch =
+      lunchStartMins !== null &&
+      lunchEndMins !== null &&
+      current < lunchEndMins &&
+      slotEnd > lunchStartMins;
+
+    if (!overlapsLunch) {
+      slots.push(minutesToTime(current));
+    }
+
+    current += intervalMinutes;
+  }
+
+  return slots;
+}
+
+async function getPublicScheduleSettings(req, res) {
+  try {
+    const { businessId } = req.params;
+
+    const [rows] = await db.query(
+      `
+      SELECT schedule_type, slot_interval_minutes, vehicles_per_slot,
+             daily_limit, morning_limit, afternoon_limit, night_limit
+      FROM business_schedule_settings
+      WHERE business_id = ?
+      LIMIT 1
+      `,
+      [businessId],
+    );
+
+    return res.json({
+      mensagem: "Configurações carregadas com sucesso.",
+      settings: rows[0] || defaultScheduleSettings,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      mensagem: "Erro ao carregar configurações.",
+      erro: error.message,
+    });
+  }
+}
+
+async function getPublicMonthAvailability(req, res) {
+  try {
+    const { businessId } = req.params;
+    const { year, month } = req.query;
+
+    const yearNum = parseInt(year);
+    const monthNum = parseInt(month);
+
+    if (!yearNum || !monthNum || monthNum < 1 || monthNum > 12) {
+      return res.status(400).json({ mensagem: "Ano e mês inválidos." });
+    }
+
+    const [settingsRows] = await db.query(
+      `SELECT schedule_type, slot_interval_minutes, vehicles_per_slot,
+              daily_limit, morning_limit, afternoon_limit, night_limit
+       FROM business_schedule_settings WHERE business_id = ? LIMIT 1`,
+      [businessId],
+    );
+    const settings = settingsRows[0] || defaultScheduleSettings;
+
+    const [workingHoursRows] = await db.query(
+      `SELECT weekday, is_open,
+              TIME_FORMAT(open_time, '%H:%i') AS open_time,
+              TIME_FORMAT(close_time, '%H:%i') AS close_time,
+              has_lunch_break,
+              TIME_FORMAT(lunch_start, '%H:%i') AS lunch_start,
+              TIME_FORMAT(lunch_end, '%H:%i') AS lunch_end
+       FROM business_working_hours WHERE business_id = ?`,
+      [businessId],
+    );
+
+    const [blocks] = await db.query(
+      `SELECT DATE_FORMAT(block_date, '%Y-%m-%d') AS block_date
+       FROM business_schedule_blocks
+       WHERE business_id = ? AND is_full_day = 1
+         AND YEAR(block_date) = ? AND MONTH(block_date) = ?`,
+      [businessId, yearNum, monthNum],
+    );
+    const blockedDates = new Set(blocks.map((b) => b.block_date));
+
+    const [orderRows] = await db.query(
+      `SELECT DATE_FORMAT(scheduled_date, '%Y-%m-%d') AS date,
+              TIME_FORMAT(scheduled_time, '%H:%i') AS scheduled_time,
+              scheduled_period,
+              COUNT(*) AS cnt
+       FROM service_orders
+       WHERE business_id = ?
+         AND YEAR(scheduled_date) = ?
+         AND MONTH(scheduled_date) = ?
+         AND status NOT IN ('cancelado')
+       GROUP BY scheduled_date, scheduled_time, scheduled_period`,
+      [businessId, yearNum, monthNum],
+    );
+
+    const daysInMonth = new Date(yearNum, monthNum, 0).getDate();
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+
+    const days = {};
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateStr = `${yearNum}-${String(monthNum).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+
+      if (dateStr < todayStr) {
+        days[dateStr] = "past";
+        continue;
+      }
+
+      const weekday = new Date(yearNum, monthNum - 1, day).getDay();
+      const dayConfig = workingHoursRows.find(
+        (w) => Number(w.weekday) === weekday,
+      );
+
+      if (!dayConfig || !toBoolean(dayConfig.is_open)) {
+        days[dateStr] = "closed";
+        continue;
+      }
+
+      if (blockedDates.has(dateStr)) {
+        days[dateStr] = "blocked";
+        continue;
+      }
+
+      const dateOrders = orderRows.filter((o) => o.date === dateStr);
+
+      if (settings.schedule_type === "daily") {
+        const total = dateOrders.reduce((s, o) => s + Number(o.cnt), 0);
+        days[dateStr] = total < settings.daily_limit ? "available" : "full";
+      } else if (settings.schedule_type === "periods") {
+        const morning = dateOrders
+          .filter((o) => o.scheduled_period === "morning")
+          .reduce((s, o) => s + Number(o.cnt), 0);
+        const afternoon = dateOrders
+          .filter((o) => o.scheduled_period === "afternoon")
+          .reduce((s, o) => s + Number(o.cnt), 0);
+        const night = dateOrders
+          .filter((o) => o.scheduled_period === "night")
+          .reduce((s, o) => s + Number(o.cnt), 0);
+
+        const hasSpace =
+          (settings.morning_limit > 0 && morning < settings.morning_limit) ||
+          (settings.afternoon_limit > 0 &&
+            afternoon < settings.afternoon_limit) ||
+          (settings.night_limit > 0 && night < settings.night_limit);
+
+        days[dateStr] = hasSpace ? "available" : "full";
+      } else {
+        const slots = generateTimeSlots(dayConfig, settings.slot_interval_minutes);
+        const hasSpace = slots.some((slot) => {
+          const count = dateOrders
+            .filter((o) => o.scheduled_time === slot)
+            .reduce((s, o) => s + Number(o.cnt), 0);
+          return count < settings.vehicles_per_slot;
+        });
+        days[dateStr] = hasSpace ? "available" : "full";
+      }
+    }
+
+    return res.json({
+      mensagem: "Disponibilidade carregada com sucesso.",
+      settings,
+      days,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      mensagem: "Erro ao carregar disponibilidade.",
+      erro: error.message,
+    });
+  }
+}
+
+async function getPublicDaySlots(req, res) {
+  try {
+    const { businessId } = req.params;
+    const { date } = req.query;
+
+    if (!date) {
+      return res.status(400).json({ mensagem: "Data não informada." });
+    }
+
+    const [settingsRows] = await db.query(
+      `SELECT schedule_type, slot_interval_minutes, vehicles_per_slot,
+              daily_limit, morning_limit, afternoon_limit, night_limit
+       FROM business_schedule_settings WHERE business_id = ? LIMIT 1`,
+      [businessId],
+    );
+    const settings = settingsRows[0] || defaultScheduleSettings;
+
+    const dateParts = date.split("-");
+    const weekday = new Date(
+      Number(dateParts[0]),
+      Number(dateParts[1]) - 1,
+      Number(dateParts[2]),
+    ).getDay();
+
+    const [workingHoursRows] = await db.query(
+      `SELECT is_open,
+              TIME_FORMAT(open_time, '%H:%i') AS open_time,
+              TIME_FORMAT(close_time, '%H:%i') AS close_time,
+              has_lunch_break,
+              TIME_FORMAT(lunch_start, '%H:%i') AS lunch_start,
+              TIME_FORMAT(lunch_end, '%H:%i') AS lunch_end
+       FROM business_working_hours WHERE business_id = ? AND weekday = ? LIMIT 1`,
+      [businessId, weekday],
+    );
+
+    const dayConfig = workingHoursRows[0];
+
+    if (!dayConfig || !toBoolean(dayConfig.is_open)) {
+      return res.status(400).json({ mensagem: "Lava-jato fechado neste dia." });
+    }
+
+    const [orderRows] = await db.query(
+      `SELECT TIME_FORMAT(scheduled_time, '%H:%i') AS scheduled_time,
+              scheduled_period,
+              COUNT(*) AS cnt
+       FROM service_orders
+       WHERE business_id = ? AND scheduled_date = ? AND status NOT IN ('cancelado')
+       GROUP BY scheduled_time, scheduled_period`,
+      [businessId, date],
+    );
+
+    if (settings.schedule_type === "time_slots") {
+      const allSlots = generateTimeSlots(dayConfig, settings.slot_interval_minutes);
+      const slots = allSlots.map((time) => {
+        const count = orderRows
+          .filter((o) => o.scheduled_time === time)
+          .reduce((s, o) => s + Number(o.cnt), 0);
+        return {
+          time,
+          available: count < settings.vehicles_per_slot,
+        };
+      });
+      return res.json({ type: "time_slots", slots });
+    }
+
+    if (settings.schedule_type === "periods") {
+      const morningCount = orderRows
+        .filter((o) => o.scheduled_period === "morning")
+        .reduce((s, o) => s + Number(o.cnt), 0);
+      const afternoonCount = orderRows
+        .filter((o) => o.scheduled_period === "afternoon")
+        .reduce((s, o) => s + Number(o.cnt), 0);
+      const nightCount = orderRows
+        .filter((o) => o.scheduled_period === "night")
+        .reduce((s, o) => s + Number(o.cnt), 0);
+
+      const periods = [];
+      if (settings.morning_limit > 0) {
+        periods.push({
+          period: "morning",
+          label: "Manhã",
+          available: morningCount < settings.morning_limit,
+        });
+      }
+      if (settings.afternoon_limit > 0) {
+        periods.push({
+          period: "afternoon",
+          label: "Tarde",
+          available: afternoonCount < settings.afternoon_limit,
+        });
+      }
+      if (settings.night_limit > 0) {
+        periods.push({
+          period: "night",
+          label: "Noite",
+          available: nightCount < settings.night_limit,
+        });
+      }
+
+      return res.json({ type: "periods", periods });
+    }
+
+    const totalCount = orderRows.reduce((s, o) => s + Number(o.cnt), 0);
+    return res.json({
+      type: "daily",
+      available: totalCount < settings.daily_limit,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      mensagem: "Erro ao carregar horários.",
+      erro: error.message,
+    });
+  }
+}
+
+async function getPublicServiceDetail(req, res) {
+  try {
+    const { businessId, serviceId } = req.params;
+
+    const [rows] = await db.query(
+      `SELECT id, name, price, duration_minutes
+       FROM services
+       WHERE id = ? AND business_id = ? AND status = 'active'
+       LIMIT 1`,
+      [serviceId, businessId],
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ mensagem: "Serviço não encontrado." });
+    }
+
+    return res.json({ service: rows[0] });
+  } catch (error) {
+    return res.status(500).json({
+      mensagem: "Erro ao buscar serviço.",
+      erro: error.message,
+    });
+  }
+}
+
+async function createPublicBooking(req, res) {
+  const connection = await db.getConnection();
+
+  try {
+    const { businessId } = req.params;
+    const {
+      serviceId,
+      customerName,
+      customerPhone,
+      vehiclePlate,
+      vehicleModel,
+      vehicleColor,
+      scheduledDate,
+      scheduledTime,
+      scheduledPeriod,
+    } = req.body;
+
+    if (
+      !serviceId ||
+      !customerName ||
+      !customerPhone ||
+      !vehiclePlate ||
+      !scheduledDate
+    ) {
+      return res.status(400).json({
+        mensagem: "Dados incompletos para realizar o agendamento.",
+      });
+    }
+
+    const cleanPlate = String(vehiclePlate)
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, "")
+      .slice(0, 7);
+
+    const cleanPhone = String(customerPhone).replace(/\D/g, "");
+
+    const [services] = await connection.query(
+      `SELECT id, price FROM services
+       WHERE id = ? AND business_id = ? AND status = 'active' LIMIT 1`,
+      [serviceId, businessId],
+    );
+
+    if (services.length === 0) {
+      return res.status(404).json({ mensagem: "Serviço não encontrado." });
+    }
+
+    const price = services[0].price;
+
+    await connection.beginTransaction();
+
+    let customerId;
+    const [existingCustomers] = await connection.query(
+      `SELECT id FROM customers WHERE business_id = ? AND phone = ? LIMIT 1`,
+      [businessId, cleanPhone],
+    );
+
+    if (existingCustomers.length > 0) {
+      customerId = existingCustomers[0].id;
+      await connection.query(
+        `UPDATE customers SET name = ? WHERE id = ? AND business_id = ?`,
+        [customerName, customerId, businessId],
+      );
+    } else {
+      const [result] = await connection.query(
+        `INSERT INTO customers (business_id, name, phone) VALUES (?, ?, ?)`,
+        [businessId, customerName, cleanPhone],
+      );
+      customerId = result.insertId;
+    }
+
+    let vehicleId;
+    const [existingVehicles] = await connection.query(
+      `SELECT id FROM vehicles WHERE business_id = ? AND plate = ? LIMIT 1`,
+      [businessId, cleanPlate],
+    );
+
+    if (existingVehicles.length > 0) {
+      vehicleId = existingVehicles[0].id;
+      await connection.query(
+        `UPDATE vehicles SET customer_id = ?, model = ?, color = ?
+         WHERE id = ? AND business_id = ?`,
+        [customerId, vehicleModel || null, vehicleColor || null, vehicleId, businessId],
+      );
+    } else {
+      const [result] = await connection.query(
+        `INSERT INTO vehicles (business_id, customer_id, plate, model, color)
+         VALUES (?, ?, ?, ?, ?)`,
+        [businessId, customerId, cleanPlate, vehicleModel || null, vehicleColor || null],
+      );
+      vehicleId = result.insertId;
+    }
+
+    const [orderResult] = await connection.query(
+      `INSERT INTO service_orders
+       (business_id, customer_id, vehicle_id, service_id, scheduled_date,
+        scheduled_time, scheduled_period, status, price, origin)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'agendado', ?, 'online')`,
+      [
+        businessId,
+        customerId,
+        vehicleId,
+        serviceId,
+        scheduledDate,
+        scheduledTime || null,
+        scheduledPeriod || null,
+        price,
+      ],
+    );
+
+    await connection.commit();
+
+    return res.status(201).json({
+      mensagem: "Agendamento realizado com sucesso.",
+      orderId: orderResult.insertId,
+    });
+  } catch (error) {
+    await connection.rollback();
+    return res.status(500).json({
+      mensagem: "Erro ao realizar agendamento.",
+      erro: error.message,
+    });
+  } finally {
+    connection.release();
+  }
+}
+
 module.exports = {
   getCustomerPage,
   listPublicCategories,
   listPublicServicesByCategory,
   getPublicVehicleByPlate,
+  getPublicScheduleSettings,
+  getPublicMonthAvailability,
+  getPublicDaySlots,
+  getPublicServiceDetail,
+  createPublicBooking,
 };

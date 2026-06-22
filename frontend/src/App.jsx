@@ -14,6 +14,8 @@ import ClienteInicio from "./pages/cliente/clienteInicio";
 import ClienteCategorias from "./pages/cliente/clienteCategorias";
 import ClienteServicos from "./pages/cliente/clienteServicos";
 import ClienteDados from "./pages/cliente/clienteDados";
+import ClienteAgenda from "./pages/cliente/clienteAgenda";
+import ClienteConfirmacao from "./pages/cliente/clienteConfirmacao";
 import Clientes from "./pages/clientes/Clientes";
 
 function App() {
@@ -59,6 +61,14 @@ function App() {
 
   if (isPublicCustomerRoute && pathParts[2] === "dados") {
     return <ClienteDados />;
+  }
+
+  if (isPublicCustomerRoute && pathParts[2] === "agenda") {
+    return <ClienteAgenda />;
+  }
+
+  if (isPublicCustomerRoute && pathParts[2] === "confirmacao") {
+    return <ClienteConfirmacao />;
   }
 
   // ROTAS PROTEGIDAS

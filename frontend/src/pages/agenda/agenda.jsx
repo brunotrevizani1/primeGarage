@@ -164,14 +164,23 @@ function Agenda() {
     setScheduleModalType(null);
   }
 
-  function saveScheduleType() {
+  async function saveScheduleType() {
     if (!canEditAgenda) {
       setError("Você não possui permissão para editar a agenda.");
       return;
     }
 
-    setSelectedScheduleType(scheduleSettings.schedule_type);
-    setScheduleModalType(null);
+    try {
+      await apiRequest("/api/schedule/settings", {
+        method: "PUT",
+        body: JSON.stringify(scheduleSettings),
+      });
+
+      setSelectedScheduleType(scheduleSettings.schedule_type);
+      setScheduleModalType(null);
+    } catch (error) {
+      setError(error.message);
+    }
   }
 
   function getScheduleTypeTitle(type) {
@@ -239,8 +248,14 @@ function Agenda() {
 
       const blocksResponse = await apiRequest("/api/schedule/blocks");
 
+      const settingsResponse = await apiRequest("/api/schedule/settings");
+
       setWorkingHours(workingHoursResponse.workingHours || []);
       setBlocks(blocksResponse.blocks || []);
+
+      const settings = settingsResponse.settings;
+      setScheduleSettings(settings);
+      setSelectedScheduleType(settings.schedule_type);
     } catch (error) {
       setError(error.message);
     } finally {

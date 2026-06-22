@@ -388,6 +388,16 @@ function Dashboard() {
                         <MenuIcon name="blocks" />
                         <span>Bloqueios de agenda</span>
                       </button>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          (window.location.href = "/agenda?tab=settings")
+                        }
+                      >
+                        <MenuIcon name="settings" />
+                        <span>Configuração da agenda</span>
+                      </button>
                     </div>
                   )}
                 </div>

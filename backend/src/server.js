@@ -47,13 +47,12 @@ app.use("/api/schedule", scheduleRoutes);
 app.use("/api/settings", settingsRoutes);
 app.use("/api/public", publicRoutes);
 app.use("/api/customers", customerRoutes);
-app.use("/api/customers", customerRoutes);
 
 app.get("/", (req, res) => {
   res.send("API PrimeGarage funcionando!");
 });
 
-app.get("/api/teste-banco", async (req, res) => {
+app.get("/api/teste-banco", authMiddleware, async (req, res) => {
   try {
     const [resultado] = await db.query("SELECT 1 + 1 AS soma");
 

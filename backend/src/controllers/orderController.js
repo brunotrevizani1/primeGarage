@@ -218,9 +218,8 @@ async function updateOrderStatus(req, res) {
     const businessId = req.user.business_id;
     const { id } = req.params;
     const { status } = req.body;
-    const requestedStatus = req.body.status;
 
-    if (!requestedStatus) {
+    if (!status) {
       return res.status(400).json({
         mensagem: "Status é obrigatório.",
       });
@@ -228,7 +227,7 @@ async function updateOrderStatus(req, res) {
 
     if (req.user.role !== "owner" && req.user.role !== "super_admin") {
       const requiredPermission =
-        requestedStatus === "cancelado"
+        status === "cancelado"
           ? "cancelar_atendimento"
           : "alterar_status";
 
