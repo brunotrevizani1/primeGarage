@@ -55,7 +55,21 @@ function ClienteDados() {
   function capitalizeWords(value) {
     return String(value || "")
       .toLowerCase()
-      .replace(/\b\w/g, (letter) => letter.toUpperCase());
+      .replace(/(^|\s)\S/g, (m) => m.toUpperCase());
+  }
+
+  const NAME_LOWERCASE = new Set(["da", "de", "di", "do", "du", "das", "dos", "e", "ou", "a", "o"]);
+
+  function capitalizeName(value) {
+    return String(value || "")
+      .toLowerCase()
+      .split(" ")
+      .map((word, index) => {
+        if (!word) return word;
+        if (index > 0 && NAME_LOWERCASE.has(word)) return word;
+        return word.charAt(0).toUpperCase() + word.slice(1);
+      })
+      .join(" ");
   }
 
   function updateField(field, value) {
@@ -239,22 +253,40 @@ function ClienteDados() {
               <div className="form-group full-field">
                 <label>Placa</label>
 
-                <div className="input-with-loader">
-                  <input
-                    type="text"
-                    placeholder="ABC1D23"
-                    value={form.vehiclePlate}
-                    onChange={(event) =>
-                      searchVehicleByPlate(event.target.value)
-                    }
-                  />
-
-                  {loadingPlate && (
-                    <div
-                      className="customer-data-small-loader"
-                      aria-label="Buscando placa"
-                    ></div>
-                  )}
+                <div className="plate-wrapper">
+                  <div className="plate-brazil">
+                    <div className="plate-header">
+                      <div className="plate-mercosul-label">
+                        <span className="plate-stars">· · ·</span>
+                        <span>MERCOSUL</span>
+                      </div>
+                      <span className="plate-brasil-text">BRASIL</span>
+                      <svg className="plate-flag-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 14">
+                        <rect width="20" height="14" fill="#009c3b"/>
+                        <polygon points="10,1 19,7 10,13 1,7" fill="#ffdf00"/>
+                        <circle cx="10" cy="7" r="3.5" fill="#002776"/>
+                      </svg>
+                    </div>
+                    <div className="plate-body">
+                      <span className="plate-br-label">BR</span>
+                      <input
+                        className="plate-input"
+                        type="text"
+                        placeholder="ABC1D23"
+                        value={form.vehiclePlate}
+                        maxLength={7}
+                        onChange={(event) =>
+                          searchVehicleByPlate(event.target.value)
+                        }
+                      />
+                      {loadingPlate && (
+                        <div
+                          className="customer-data-small-loader plate-loader"
+                          aria-label="Buscando placa"
+                        />
+                      )}
+                    </div>
+                  </div>
                 </div>
 
                 {form.vehiclePlate.length === 7 && vehicleFound && (
@@ -301,7 +333,7 @@ function ClienteDados() {
                   placeholder="Ex: João Silva"
                   value={form.customerName}
                   onChange={(event) =>
-                    updateField("customerName", event.target.value)
+                    updateField("customerName", capitalizeName(event.target.value))
                   }
                 />
               </div>

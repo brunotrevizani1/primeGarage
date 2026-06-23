@@ -58,9 +58,23 @@ function NovoAtendimento() {
   });
 
   function capitalizeWords(value) {
-    return value
+    return String(value || "")
       .toLowerCase()
-      .replace(/\b\w/g, (letter) => letter.toUpperCase());
+      .replace(/(^|\s)\S/g, (m) => m.toUpperCase());
+  }
+
+  const NAME_LOWERCASE = new Set(["da", "de", "di", "do", "du", "das", "dos", "e", "ou", "a", "o"]);
+
+  function capitalizeName(value) {
+    return String(value || "")
+      .toLowerCase()
+      .split(" ")
+      .map((word, index) => {
+        if (!word) return word;
+        if (index > 0 && NAME_LOWERCASE.has(word)) return word;
+        return word.charAt(0).toUpperCase() + word.slice(1);
+      })
+      .join(" ");
   }
 
   function updateField(field, value) {
@@ -129,7 +143,7 @@ function NovoAtendimento() {
   }
 
   function handleNameChange(value) {
-    updateField("customerName", onlyLetters(value));
+    updateField("customerName", capitalizeName(onlyLetters(value)));
   }
 
   function handlePhoneChange(value) {

@@ -83,6 +83,26 @@ function EditarAtendimento() {
     return value.replace(/[^A-Za-zÀ-ÿ\s]/g, "");
   }
 
+  const NAME_LOWERCASE = new Set(["da", "de", "di", "do", "du", "das", "dos", "e", "ou", "a", "o"]);
+
+  function capitalizeName(value) {
+    return String(value || "")
+      .toLowerCase()
+      .split(" ")
+      .map((word, index) => {
+        if (!word) return word;
+        if (index > 0 && NAME_LOWERCASE.has(word)) return word;
+        return word.charAt(0).toUpperCase() + word.slice(1);
+      })
+      .join(" ");
+  }
+
+  function capitalizeWords(value) {
+    return String(value || "")
+      .toLowerCase()
+      .replace(/(^|\s)\S/g, (m) => m.toUpperCase());
+  }
+
   function onlyNumbers(value) {
     return value.replace(/\D/g, "");
   }
@@ -113,7 +133,7 @@ function EditarAtendimento() {
   }
 
   function handleNameChange(value) {
-    updateField("customerName", onlyLetters(value));
+    updateField("customerName", capitalizeName(onlyLetters(value)));
   }
 
   function handlePhoneChange(value) {
@@ -125,12 +145,12 @@ function EditarAtendimento() {
   }
 
   function handleModelChange(value) {
-    const formatted = value.replace(/[^A-Za-zÀ-ÿ0-9\s]/g, "");
-    updateField("vehicleModel", formatted);
+    const letters = value.replace(/[^A-Za-zÀ-ÿ0-9\s]/g, "");
+    updateField("vehicleModel", capitalizeWords(letters));
   }
 
   function handleColorChange(value) {
-    updateField("vehicleColor", onlyLetters(value));
+    updateField("vehicleColor", capitalizeWords(onlyLetters(value)));
   }
 
   function validateForm() {

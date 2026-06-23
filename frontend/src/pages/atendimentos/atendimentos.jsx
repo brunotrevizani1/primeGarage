@@ -254,9 +254,10 @@ function Atendimentos() {
     }
   }
 
-  async function loadOrders() {
+  async function loadOrders(showLoading = true) {
     try {
-      setLoading(true);
+      if (showLoading) setLoading(true);
+      setError("");
 
       const response = await apiRequest(buildFilterQuery());
 
@@ -264,7 +265,7 @@ function Atendimentos() {
     } catch (error) {
       setError(error.message);
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   }
 
@@ -278,7 +279,7 @@ function Atendimentos() {
         body: JSON.stringify({ status }),
       });
 
-      await loadOrders();
+      await loadOrders(false);
     } catch (error) {
       setError(error.message);
     } finally {
@@ -303,6 +304,12 @@ function Atendimentos() {
 
   useEffect(() => {
     loadOrders();
+
+    const id = setInterval(() => {
+      if (!document.hidden) loadOrders(false);
+    }, 30000);
+
+    return () => clearInterval(id);
   }, [selectedDate]);
 
   if (loading) {

@@ -12,10 +12,15 @@ export async function apiRequest(endpoint, options = {}) {
     credentials: "include",
   });
 
-  const data = await response.json();
+  let data;
+  try {
+    data = await response.json();
+  } catch {
+    throw new Error(`Erro na requisição (status ${response.status}).`);
+  }
 
   if (!response.ok) {
-    throw new Error(data.mensagem || "Erro na requisição.");
+    throw new Error(data?.mensagem || "Erro na requisição.");
   }
 
   return data;
