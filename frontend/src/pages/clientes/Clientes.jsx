@@ -16,6 +16,7 @@ function Clientes() {
   const [servicesMenuOpen, setServicesMenuOpen] = useState(false);
   const [agendaMenuOpen, setAgendaMenuOpen] = useState(false);
   const [settingsMenuOpen, setSettingsMenuOpen] = useState(false);
+  const [financeMenuOpen, setFinanceMenuOpen] = useState(false);
   const [error, setError] = useState("");
 
   const [filterModalOpen, setFilterModalOpen] = useState(false);
@@ -147,6 +148,32 @@ function Clientes() {
     return String(value || "")
       .toLowerCase()
       .replace(/\b\w/g, (letter) => letter.toUpperCase());
+  }
+
+  const NAME_LOWERCASE = new Set([
+    "da",
+    "de",
+    "di",
+    "do",
+    "du",
+    "das",
+    "dos",
+    "e",
+    "ou",
+    "a",
+    "o",
+  ]);
+
+  function capitalizeName(value) {
+    return String(value || "")
+      .toLowerCase()
+      .split(" ")
+      .map((word, index) => {
+        if (!word) return word;
+        if (index > 0 && NAME_LOWERCASE.has(word)) return word;
+        return word.charAt(0).toUpperCase() + word.slice(1);
+      })
+      .join(" ");
   }
 
   function updateCustomerField(field, value) {
@@ -482,10 +509,55 @@ function Clientes() {
               )}
 
               {canViewFinance && (
-                <button type="button">
-                  <MenuIcon name="finance" />
-                  <span>Financeiro</span>
-                </button>
+                <div className="menu-group">
+                  <button
+                    type="button"
+                    className="menu-parent-button"
+                    onClick={() => setFinanceMenuOpen(!financeMenuOpen)}
+                  >
+                    <MenuIcon name="finance" />
+                    <span>Financeiro</span>
+                    <svg
+                      className={financeMenuOpen ? "submenu-arrow open" : "submenu-arrow"}
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                    >
+                      <path d="M7.22 9.47a.75.75 0 0 1 1.06 0L12 13.19l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0l-4.25-4.25a.75.75 0 0 1 0-1.06Z" />
+                    </svg>
+                  </button>
+                  {financeMenuOpen && (
+                    <div className="submenu-links">
+                      <button
+                        type="button"
+                        onClick={() => (window.location.href = "/financeiro/a-receber")}
+                      >
+                        <MenuIcon name="receivables" />
+                        <span>A receber</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => (window.location.href = "/financeiro/a-pagar")}
+                      >
+                        <MenuIcon name="payable" />
+                        <span>A pagar</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => (window.location.href = "/financeiro/formas-de-pagamento")}
+                      >
+                        <MenuIcon name="payment" />
+                        <span>Formas de pagamento</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => (window.location.href = "/financeiro/banco")}
+                      >
+                        <MenuIcon name="bank" />
+                        <span>Banco</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
               )}
 
               {canViewCustomers && (
@@ -859,7 +931,10 @@ function Clientes() {
                     placeholder="Ex: João Silva"
                     value={customerForm.customerName}
                     onChange={(event) =>
-                      updateCustomerField("customerName", event.target.value)
+                      updateCustomerField(
+                        "customerName",
+                        capitalizeName(event.target.value),
+                      )
                     }
                   />
                 </div>

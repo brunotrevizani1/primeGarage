@@ -195,16 +195,19 @@
   align-items: flex-end;
   justify-content: center;
   padding: 14px;
+  overflow: hidden;
 }
 
 .customer-modal {
   width: 100%;
   max-width: 430px;
+  max-height: calc(100vh - 28px);
   background: #ffffff;
   border-radius: 30px;
   padding: 18px;
   box-shadow: 0 24px 70px rgba(15, 23, 42, 0.22);
   animation: customerModalUp 0.2s ease;
+  overflow: hidden;
 }
 
 .customer-modal-header {
@@ -299,17 +302,59 @@
   transform: scale(0.98);
 }
 
+.modal-nav-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.modal-nav-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 72px;
+  border: none;
+  border-radius: 18px;
+  font-size: 0.78rem;
+  font-weight: 900;
+  cursor: pointer;
+  color: #ffffff;
+  letter-spacing: 0.01em;
+}
+
+.modal-nav-btn svg {
+  width: 26px;
+  height: 26px;
+}
+
+.modal-nav-btn:active {
+  transform: scale(0.97);
+}
+
+.modal-nav-btn--gmaps {
+  background: #34a853;
+  box-shadow: 0 8px 20px rgba(52, 168, 83, 0.32);
+}
+
+.modal-nav-btn--waze {
+  background: #33ccff;
+  box-shadow: 0 8px 20px rgba(51, 204, 255, 0.32);
+}
+
 .working-hours-modal-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 6px;
+  overflow: hidden;
 }
 
 .working-hours-modal-row {
   background: #f8faf9;
   border: 1px solid #edf1ee;
-  border-radius: 18px;
-  padding: 13px 14px;
+  border-radius: 14px;
+  padding: 8px 14px;
 }
 
 .working-hours-modal-row strong {

@@ -17,6 +17,10 @@ import ClienteDados from "./pages/cliente/clienteDados";
 import ClienteAgenda from "./pages/cliente/clienteAgenda";
 import ClienteConfirmacao from "./pages/cliente/clienteConfirmacao";
 import Clientes from "./pages/clientes/Clientes";
+import AReceber from "./pages/financeiro/aReceber";
+import APagar from "./pages/financeiro/aPagar";
+import FormasPagamento from "./pages/financeiro/formasPagamento";
+import Banco from "./pages/financeiro/banco";
 
 function App() {
   const path = window.location.pathname;
@@ -89,6 +93,10 @@ function App() {
   if (path === "/agenda") return <Agenda />;
   if (path === "/configuracoes") return <Configuracoes />;
   if (path === "/clientes") return <Clientes />;
+  if (path === "/financeiro/a-receber") return <AReceber />;
+  if (path === "/financeiro/a-pagar") return <APagar />;
+  if (path === "/financeiro/formas-de-pagamento") return <FormasPagamento />;
+  if (path === "/financeiro/banco") return <Banco />;
 
   return <Login />;
 }

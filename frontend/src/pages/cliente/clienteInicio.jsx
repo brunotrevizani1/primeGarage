@@ -89,6 +89,19 @@ function ClienteInicio() {
     window.open(mapsUrl, "_blank");
   }
 
+  function openWaze() {
+    const address = getFormattedAddress();
+
+    if (!address) {
+      alert("Localização ainda não cadastrada pelo lava-jato.");
+      return;
+    }
+
+    const wazeUrl = `https://waze.com/ul?q=${encodeURIComponent(address)}&navigate=yes`;
+
+    window.open(wazeUrl, "_blank");
+  }
+
   function formatWorkingHour(day) {
     const isOpen = toBoolean(day.is_open);
     const hasLunchBreak = toBoolean(day.has_lunch_break);
@@ -175,13 +188,32 @@ function ClienteInicio() {
               <p>{getFormattedAddress()}</p>
             </div>
 
-            <button
-              type="button"
-              className="modal-primary-button"
-              onClick={openGoogleMaps}
-            >
-              Abrir no Google Maps
-            </button>
+            <div className="modal-nav-buttons">
+              <button
+                type="button"
+                className="modal-nav-btn modal-nav-btn--gmaps"
+                onClick={openGoogleMaps}
+              >
+                <svg viewBox="0 0 24 24" fill="white" aria-hidden="true">
+                  <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+                </svg>
+                <span>Google Maps</span>
+              </button>
+
+              <button
+                type="button"
+                className="modal-nav-btn modal-nav-btn--waze"
+                onClick={openWaze}
+              >
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path fill="white" d="M12 2C8 2 4.5 5.5 4.5 9.5c0 2.4 1.1 4.56 2.83 6L6 20l4.2-1.4c.59.15 1.2.23 1.8.23C16 18.83 19.5 15.33 19.5 11c0-4.97-3.36-9-7.5-9z" />
+                  <circle cx="9.5" cy="10" r="1.3" fill="#1a9dc9" />
+                  <circle cx="14.5" cy="10" r="1.3" fill="#1a9dc9" />
+                  <path d="M9.5 13.5q1.25 1.5 2.5 1.5t2.5-1.5" stroke="#1a9dc9" strokeWidth="1.4" strokeLinecap="round" />
+                </svg>
+                <span>Waze</span>
+              </button>
+            </div>
           </section>
         </div>
       )}

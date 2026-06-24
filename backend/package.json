@@ -17,7 +17,14 @@
     "create-team-tables": "node src/database/createTeamTables.js",
     "create-schedule-settings-table": "node src/database/createScheduleSettingsTable.js",
     "add-schedule-columns": "node src/database/addScheduleColumnsToOrders.js",
-    "add-origin-column": "node src/database/addOriginColumn.js"
+    "add-origin-column": "node src/database/addOriginColumn.js",
+    "create-payment-methods-table": "node src/database/createPaymentMethodsTable.js",
+    "alter-payments-table": "node src/database/alterPaymentsTable.js",
+    "create-banks-table": "node src/database/createBanksTable.js",
+    "create-payables-table": "node src/database/createPayablesTable.js",
+    "alter-payment-methods-add-bank": "node src/database/alterPaymentMethodsAddBank.js",
+    "alter-payments-add-bank-id": "node src/database/alterPaymentsAddBankId.js",
+    "reset-orders": "node src/database/resetOrders.js"
   },
   "keywords": [],
   "author": "",

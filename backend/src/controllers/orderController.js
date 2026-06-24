@@ -294,6 +294,23 @@ async function updateOrderStatus(req, res) {
       });
     }
 
+    if (status === "entregue") {
+      const [[order]] = await db.query(
+        "SELECT price FROM service_orders WHERE id = ? AND business_id = ?",
+        [id, businessId],
+      );
+      const [existing] = await db.query(
+        "SELECT id FROM payments WHERE service_order_id = ? AND business_id = ?",
+        [id, businessId],
+      );
+      if (order && existing.length === 0) {
+        await db.query(
+          "INSERT INTO payments (business_id, service_order_id, amount, status, paid_at) VALUES (?, ?, ?, 'pendente', NULL)",
+          [businessId, id, order.price],
+        );
+      }
+    }
+
     res.json({
       mensagem: "Status atualizado com sucesso.",
       status,

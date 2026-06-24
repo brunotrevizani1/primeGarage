@@ -1,0 +1,354 @@
+.fp-page {
+  min-height: 100vh;
+  background: #f4f6f5;
+}
+
+.fp-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  gap: 14px;
+  color: #64716d;
+}
+
+.fp-loading-circle {
+  width: 38px;
+  height: 38px;
+  border: 4px solid rgba(47, 82, 73, 0.18);
+  border-top-color: #2f5249;
+  border-radius: 50%;
+  animation: fpSpin 0.8s linear infinite;
+}
+
+@keyframes fpSpin {
+  to { transform: rotate(360deg); }
+}
+
+.fp-container {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 20px 16px 40px;
+}
+
+.fp-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.fp-header h1 {
+  font-size: 1.45rem;
+  font-weight: 900;
+  color: #14211d;
+  letter-spacing: -0.04em;
+}
+
+.fp-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 0.88rem;
+  margin-bottom: 14px;
+}
+
+.fp-panel {
+  background: #ffffff;
+  border-radius: 22px;
+  box-shadow: 0 4px 20px rgba(20, 33, 29, 0.07);
+  overflow: hidden;
+}
+
+.fp-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px;
+  border-bottom: 1px solid #f1f4f2;
+}
+
+.fp-panel-header h2 {
+  font-size: 1.05rem;
+  font-weight: 900;
+  color: #14211d;
+  letter-spacing: -0.03em;
+}
+
+.fp-panel-header h2 span {
+  font-weight: 500;
+  color: #64716d;
+}
+
+.fp-add-btn {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 12px;
+  background: #2f5249;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.fp-add-btn svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+}
+
+.fp-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.fp-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 18px;
+  border-bottom: 1px solid #f1f4f2;
+}
+
+.fp-item:last-child {
+  border-bottom: none;
+}
+
+.fp-item-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.fp-item-info strong {
+  font-size: 0.95rem;
+  font-weight: 900;
+  color: #14211d;
+}
+
+.fp-status-badge {
+  padding: 2px 8px;
+  border-radius: 8px;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.fp-status-badge--active {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.fp-status-badge--inactive {
+  background: #f1f5f4;
+  color: #64716d;
+}
+
+.fp-item-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.fp-edit-btn,
+.fp-delete-btn {
+  width: 34px;
+  height: 34px;
+  border: 1px solid #dde4df;
+  border-radius: 10px;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.fp-edit-btn svg,
+.fp-delete-btn svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+.fp-edit-btn { color: #2f5249; }
+.fp-delete-btn { color: #dc2626; border-color: #fecaca; }
+.fp-delete-btn:disabled { opacity: 0.5; cursor: default; }
+
+.fp-empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: #64716d;
+}
+
+.fp-empty strong {
+  display: block;
+  font-size: 1rem;
+  color: #14211d;
+  margin-bottom: 6px;
+}
+
+.fp-empty p {
+  font-size: 0.88rem;
+}
+
+/* Modal */
+.fp-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 35;
+  background: rgba(20, 33, 29, 0.42);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 14px;
+  overflow: hidden;
+}
+
+.fp-modal {
+  width: 100%;
+  max-width: 480px;
+  background: #ffffff;
+  border-radius: 26px;
+  padding: 20px;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.22);
+  animation: fpModalUp 0.2s ease;
+}
+
+@keyframes fpModalUp {
+  from { transform: translateY(30px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.fp-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.fp-modal-header strong {
+  font-size: 1.05rem;
+  font-weight: 900;
+  color: #14211d;
+}
+
+.fp-modal-header button {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  border: none;
+  border-radius: 12px;
+  background: #f1f4f2;
+  color: #14211d;
+  font-size: 1.3rem;
+  cursor: pointer;
+}
+
+.fp-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.fp-form-group label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 900;
+  color: #14211d;
+  margin-bottom: 6px;
+}
+
+.fp-form-group input {
+  width: 100%;
+  height: 46px;
+  border: 1.5px solid #dde4df;
+  border-radius: 14px;
+  padding: 0 14px;
+  font-size: 0.92rem;
+  color: #14211d;
+  background: #ffffff;
+  box-sizing: border-box;
+}
+
+.fp-form-group input:focus {
+  outline: none;
+  border-color: #2f5249;
+}
+
+.fp-form-group select {
+  width: 100%;
+  height: 46px;
+  border: 1.5px solid #dde4df;
+  border-radius: 14px;
+  padding: 0 14px;
+  font-size: 0.92rem;
+  color: #14211d;
+  background: #fff;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='%2364716d' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M7.22 9.47a.75.75 0 0 1 1.06 0L12 13.19l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0l-4.25-4.25a.75.75 0 0 1 0-1.06Z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 20px;
+  box-sizing: border-box;
+}
+
+.fp-form-group select:focus {
+  outline: none;
+  border-color: #2f5249;
+}
+
+.fp-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #14211d;
+}
+
+.fp-toggle-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #2f5249;
+  cursor: pointer;
+}
+
+.fp-modal-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.fp-btn-secondary {
+  height: 46px;
+  border: 1.5px solid #dde4df;
+  border-radius: 14px;
+  background: #ffffff;
+  color: #14211d;
+  font-size: 0.9rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.fp-btn-primary {
+  height: 46px;
+  border: none;
+  border-radius: 14px;
+  background: #2f5249;
+  color: #ffffff;
+  font-size: 0.9rem;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(47, 82, 73, 0.22);
+}
+
+.fp-btn-primary:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
