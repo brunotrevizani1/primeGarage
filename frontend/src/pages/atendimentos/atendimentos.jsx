@@ -24,6 +24,13 @@ function Atendimentos() {
   const canViewCustomers = hasPermission("ver_cliente", userPermissions);
   const [userRole, setUserRole] = useState(getSavedRole());
 
+  function getLocalDateString(date = new Date()) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
+
   function getInitialSelectedDate() {
     const params = new URLSearchParams(window.location.search);
     const dateFromUrl = params.get("date");
@@ -32,7 +39,7 @@ function Atendimentos() {
       return dateFromUrl;
     }
 
-    return new Date().toISOString().slice(0, 10);
+    return getLocalDateString();
   }
 
   const canManageSettings = hasPermission(
@@ -90,7 +97,7 @@ function Atendimentos() {
     const currentDate = new Date(`${selectedDate}T00:00:00`);
     currentDate.setDate(currentDate.getDate() + days);
 
-    setSelectedDate(currentDate.toISOString().slice(0, 10));
+    setSelectedDate(getLocalDateString(currentDate));
   }
 
   function openDateModal() {
@@ -108,13 +115,11 @@ function Atendimentos() {
   }
 
   function goToTodayFromModal() {
-    const today = new Date().toISOString().slice(0, 10);
-
-    setTemporaryDate(today);
+    setTemporaryDate(getLocalDateString());
   }
 
   function getQueueTitle() {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = getLocalDateString();
 
     if (selectedDate === today) {
       return "Fila de hoje";

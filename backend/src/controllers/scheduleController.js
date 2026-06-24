@@ -323,7 +323,8 @@ async function listScheduleBlocks(req, res) {
         created_at
       FROM business_schedule_blocks
       WHERE business_id = ?
-      ORDER BY block_date DESC, start_time ASC
+        AND block_date >= CURDATE()
+      ORDER BY block_date ASC, start_time ASC
       `,
       [businessId],
     );

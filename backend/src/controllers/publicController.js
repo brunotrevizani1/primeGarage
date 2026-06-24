@@ -421,13 +421,17 @@ async function getPublicMonthAvailability(req, res) {
     );
 
     const [blocks] = await db.query(
-      `SELECT DATE_FORMAT(block_date, '%Y-%m-%d') AS block_date
+      `SELECT DATE_FORMAT(block_date, '%Y-%m-%d') AS block_date, reason
        FROM business_schedule_blocks
        WHERE business_id = ? AND is_full_day = 1
          AND YEAR(block_date) = ? AND MONTH(block_date) = ?`,
       [businessId, yearNum, monthNum],
     );
     const blockedDates = new Set(blocks.map((b) => b.block_date));
+    const blockReasons = {};
+    for (const b of blocks) {
+      blockReasons[b.block_date] = b.reason || null;
+    }
 
     const [orderRows] = await db.query(
       `SELECT DATE_FORMAT(scheduled_date, '%Y-%m-%d') AS date,
@@ -511,6 +515,7 @@ async function getPublicMonthAvailability(req, res) {
       mensagem: "Disponibilidade carregada com sucesso.",
       settings,
       days,
+      blockReasons,
     });
   } catch (error) {
     return res.status(500).json({

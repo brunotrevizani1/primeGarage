@@ -32,6 +32,8 @@ function ClienteAgenda() {
   const [viewYear, setViewYear] = useState(now.getFullYear());
   const [viewMonth, setViewMonth] = useState(now.getMonth() + 1);
   const [availability, setAvailability] = useState({});
+  const [blockReasons, setBlockReasons] = useState({});
+  const [blockModal, setBlockModal] = useState(null);
   const [selectedDate, setSelectedDate] = useState(null);
   const [daySlots, setDaySlots] = useState(null);
   const [selectedSlot, setSelectedSlot] = useState(null);
@@ -61,6 +63,7 @@ function ClienteAgenda() {
         `/api/public/schedule-availability/${businessId}?year=${year}&month=${month}`,
       );
       setAvailability(res.days || {});
+      setBlockReasons(res.blockReasons || {});
     } catch (err) {
       setError(err.message);
     } finally {
@@ -109,6 +112,10 @@ function ClienteAgenda() {
   }
 
   function handleDayClick(dateStr, status) {
+    if (status === "blocked") {
+      setBlockModal(blockReasons[dateStr] || "");
+      return;
+    }
     if (status !== "available") return;
     if (selectedDate === dateStr) {
       clearSelection();
@@ -212,6 +219,26 @@ function ClienteAgenda() {
 
   return (
     <main className="ca-page">
+      {blockModal !== null && (
+        <div
+          className="ca-block-overlay"
+          onClick={() => setBlockModal(null)}
+        >
+          <section
+            className="ca-block-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <strong>Dia indisponível</strong>
+            <p>
+              {blockModal || "Este dia não está disponível para agendamentos."}
+            </p>
+            <button type="button" onClick={() => setBlockModal(null)}>
+              Entendido
+            </button>
+          </section>
+        </div>
+      )}
+
       <section className="ca-app">
         <section className="ca-hero">
           <button
@@ -294,7 +321,7 @@ function ClienteAgenda() {
                   type="button"
                   className={classList}
                   onClick={() => handleDayClick(cell.dateStr, status)}
-                  disabled={status !== "available"}
+                  disabled={status !== "available" && status !== "blocked"}
                 >
                   {cell.day}
                 </button>
@@ -302,11 +329,6 @@ function ClienteAgenda() {
             })}
           </div>
 
-          <div className="ca-legend">
-            <span className="ca-legend-item ca-legend-available">Disponível</span>
-            <span className="ca-legend-item ca-legend-full">Lotado</span>
-            <span className="ca-legend-item ca-legend-closed">Fechado</span>
-          </div>
         </section>
 
         {selectedDate && settings?.schedule_type === "daily" && (

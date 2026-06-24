@@ -1074,12 +1074,6 @@ function Agenda() {
                 {blocks.map((block) => (
                   <article className="block-card" key={block.id}>
                     <div className="block-card-main">
-                      <div className="block-type-badge">
-                        {toBoolean(block.is_full_day)
-                          ? "Dia inteiro"
-                          : "Horário"}
-                      </div>
-
                       <div>
                         <strong>{formatDate(block.block_date)}</strong>
                         <span>{formatBlockTime(block)}</span>
