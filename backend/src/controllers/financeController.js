@@ -93,11 +93,41 @@ async function getReceivables(req, res) {
     } = req.query;
     const offset = (Number(page) - 1) * Number(limit);
 
+    // Auto-baixa: mark overdue installments (only if migration applied)
+    try {
+      const [overdueInstallments] = await db.query(
+        `SELECT p.id, p.amount, pm.bank_id
+         FROM payments p
+         INNER JOIN payment_methods pm ON p.payment_method_id = pm.id
+         WHERE p.business_id = ?
+           AND p.status = 'pendente'
+           AND p.due_date IS NOT NULL
+           AND p.due_date <= CURDATE()
+           AND pm.auto_baixa = 1`,
+        [businessId],
+      );
+
+      for (const inst of overdueInstallments) {
+        await db.query(
+          `UPDATE payments SET status = 'pago', paid_at = NOW(), notes = 'Baixa automática por vencimento'
+           WHERE id = ? AND business_id = ?`,
+          [inst.id, businessId],
+        );
+        if (inst.bank_id) {
+          await db.query(
+            "UPDATE banks SET balance = balance + ? WHERE id = ? AND business_id = ?",
+            [Number(inst.amount), inst.bank_id, businessId],
+          );
+        }
+      }
+    } catch { /* migration not applied yet */ }
+
     const conditions = ["p.business_id = ?"];
     const params = [businessId];
 
     if (date) {
-      conditions.push("DATE(p.created_at) = ?");
+      // Use due_date for installment records, created_at for regular ones
+      conditions.push("COALESCE(DATE(p.due_date), DATE(p.created_at)) = ?");
       params.push(date);
     }
 
@@ -131,47 +161,78 @@ async function getReceivables(req, res) {
       params.push(Number(amount_max));
     }
 
+    // Build two where clauses: one using COALESCE(due_date, created_at) for date filter,
+    // and a legacy fallback using only created_at (for before migration is applied)
+    const legacyConditions = conditions.map((c) =>
+      c.includes("COALESCE(DATE(p.due_date)") ? "DATE(p.created_at) = ?" : c,
+    );
     const whereClause = conditions.join(" AND ");
+    const legacyWhere = legacyConditions.join(" AND ");
 
-    const [[{ total }]] = await db.query(
-      `SELECT COUNT(*) AS total
-       FROM payments p
-       INNER JOIN service_orders so ON p.service_order_id = so.id
-       INNER JOIN customers c ON so.customer_id = c.id
-       INNER JOIN vehicles v ON so.vehicle_id = v.id
-       LEFT JOIN payment_methods pm ON p.payment_method_id = pm.id
-       WHERE ${whereClause}`,
-      [...params],
-    );
+    let total, rows;
+    try {
+      [[{ total }]] = await db.query(
+        `SELECT COUNT(*) AS total
+         FROM payments p
+         INNER JOIN service_orders so ON p.service_order_id = so.id
+         INNER JOIN customers c ON so.customer_id = c.id
+         INNER JOIN vehicles v ON so.vehicle_id = v.id
+         LEFT JOIN payment_methods pm ON p.payment_method_id = pm.id
+         WHERE ${whereClause}`,
+        [...params],
+      );
 
-    const [rows] = await db.query(
-      `SELECT
-        p.id,
-        p.amount,
-        p.status,
-        p.paid_at,
-        p.payment_method_id,
-        p.created_at,
-        pm.name AS payment_method_name,
-        so.id AS order_id,
-        so.delivered_time,
-        c.name AS customer_name,
-        c.phone AS customer_phone,
-        v.plate AS vehicle_plate,
-        sv.name AS service_name
-      FROM payments p
-      INNER JOIN service_orders so ON p.service_order_id = so.id
-      INNER JOIN customers c ON so.customer_id = c.id
-      INNER JOIN vehicles v ON so.vehicle_id = v.id
-      INNER JOIN services sv ON so.service_id = sv.id
-      LEFT JOIN payment_methods pm ON p.payment_method_id = pm.id
-      WHERE ${whereClause}
-      ORDER BY
-        CASE WHEN p.status = 'pendente' THEN 0 ELSE 1 END ASC,
-        CASE WHEN p.status = 'pago' THEN p.paid_at ELSE p.created_at END DESC
-      LIMIT ? OFFSET ?`,
-      [...params, Number(limit), offset],
-    );
+      [rows] = await db.query(
+        `SELECT
+          p.id, p.amount, p.status, p.paid_at, p.payment_method_id, p.created_at,
+          p.due_date, p.installment_number, p.total_installments, p.parent_payment_id, p.notes,
+          pm.name AS payment_method_name, so.id AS order_id, so.delivered_time,
+          c.name AS customer_name, c.phone AS customer_phone,
+          v.plate AS vehicle_plate, sv.name AS service_name
+        FROM payments p
+        INNER JOIN service_orders so ON p.service_order_id = so.id
+        INNER JOIN customers c ON so.customer_id = c.id
+        INNER JOIN vehicles v ON so.vehicle_id = v.id
+        INNER JOIN services sv ON so.service_id = sv.id
+        LEFT JOIN payment_methods pm ON p.payment_method_id = pm.id
+        WHERE ${whereClause}
+        ORDER BY CASE WHEN p.status = 'pendente' THEN 0 ELSE 1 END ASC,
+                 CASE WHEN p.status = 'pago' THEN p.paid_at ELSE p.created_at END DESC
+        LIMIT ? OFFSET ?`,
+        [...params, Number(limit), offset],
+      );
+    } catch {
+      // Fallback: migration not applied, use only created_at for date filter
+      [[{ total }]] = await db.query(
+        `SELECT COUNT(*) AS total
+         FROM payments p
+         INNER JOIN service_orders so ON p.service_order_id = so.id
+         INNER JOIN customers c ON so.customer_id = c.id
+         INNER JOIN vehicles v ON so.vehicle_id = v.id
+         LEFT JOIN payment_methods pm ON p.payment_method_id = pm.id
+         WHERE ${legacyWhere}`,
+        [...params],
+      );
+
+      [rows] = await db.query(
+        `SELECT
+          p.id, p.amount, p.status, p.paid_at, p.payment_method_id, p.created_at,
+          pm.name AS payment_method_name, so.id AS order_id, so.delivered_time,
+          c.name AS customer_name, c.phone AS customer_phone,
+          v.plate AS vehicle_plate, sv.name AS service_name
+        FROM payments p
+        INNER JOIN service_orders so ON p.service_order_id = so.id
+        INNER JOIN customers c ON so.customer_id = c.id
+        INNER JOIN vehicles v ON so.vehicle_id = v.id
+        INNER JOIN services sv ON so.service_id = sv.id
+        LEFT JOIN payment_methods pm ON p.payment_method_id = pm.id
+        WHERE ${legacyWhere}
+        ORDER BY CASE WHEN p.status = 'pendente' THEN 0 ELSE 1 END ASC,
+                 CASE WHEN p.status = 'pago' THEN p.paid_at ELSE p.created_at END DESC
+        LIMIT ? OFFSET ?`,
+        [...params, Number(limit), offset],
+      );
+    }
 
     const totalPages = Math.ceil(total / Number(limit)) || 1;
 
@@ -215,7 +276,7 @@ async function reopenPayment(req, res) {
     );
 
     await db.query(
-      "UPDATE payments SET status = 'pendente', payment_method_id = NULL, bank_id = NULL, paid_at = NULL WHERE id = ? AND business_id = ?",
+      "UPDATE payments SET status = 'pendente', payment_method_id = NULL, bank_id = NULL, paid_at = NULL, notes = NULL WHERE id = ? AND business_id = ?",
       [id, businessId],
     );
 
@@ -236,14 +297,14 @@ async function receivePayment(req, res) {
   try {
     const businessId = req.user.business_id;
     const { id } = req.params;
-    const { payment_method_id } = req.body;
+    const { payment_method_id, installment_count } = req.body;
 
     if (!payment_method_id) {
       return res.status(400).json({ mensagem: "Forma de pagamento é obrigatória." });
     }
 
     const [payments] = await db.query(
-      "SELECT id, status, amount FROM payments WHERE id = ? AND business_id = ?",
+      "SELECT id, status, amount, service_order_id FROM payments WHERE id = ? AND business_id = ?",
       [id, businessId],
     );
 
@@ -270,17 +331,74 @@ async function receivePayment(req, res) {
     );
 
     const bankId = method && method.bank_id ? method.bank_id : null;
+    const totalAmount = Number(payments[0].amount);
+    const N = installment_count && Number(installment_count) > 1 ? Number(installment_count) : 1;
 
-    await db.query(
-      "UPDATE payments SET status = 'pago', payment_method_id = ?, bank_id = ?, paid_at = NOW() WHERE id = ? AND business_id = ?",
-      [payment_method_id, bankId, id, businessId],
-    );
+    if (N === 1) {
+      try {
+        await db.query(
+          "UPDATE payments SET status = 'pago', payment_method_id = ?, bank_id = ?, paid_at = NOW(), due_date = CURDATE() WHERE id = ? AND business_id = ?",
+          [payment_method_id, bankId, id, businessId],
+        );
+      } catch {
+        await db.query(
+          "UPDATE payments SET status = 'pago', payment_method_id = ?, bank_id = ?, paid_at = NOW() WHERE id = ? AND business_id = ?",
+          [payment_method_id, bankId, id, businessId],
+        );
+      }
 
-    if (bankId) {
-      await db.query(
-        "UPDATE banks SET balance = balance + ? WHERE id = ? AND business_id = ?",
-        [Number(payments[0].amount), bankId, businessId],
+      if (bankId) {
+        await db.query(
+          "UPDATE banks SET balance = balance + ? WHERE id = ? AND business_id = ?",
+          [totalAmount, bankId, businessId],
+        );
+      }
+    } else {
+      // Get fee for this installment count
+      const [instRows] = await db.query(
+        "SELECT fee_percentage FROM payment_method_installments WHERE payment_method_id = ? AND installment_count = ?",
+        [payment_method_id, N],
       );
+      const feePercentage = instRows.length > 0 ? Number(instRows[0].fee_percentage) : 0;
+
+      // Amount per installment with fee applied
+      const basePerInstallment = totalAmount / N;
+      const perInstallment = Math.round(basePerInstallment * (1 + feePercentage / 100) * 100) / 100;
+
+      const today = new Date();
+      const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+
+      // Update original payment as installment 1 — paid now
+      await db.query(
+        `UPDATE payments
+         SET status = 'pago', payment_method_id = ?, bank_id = ?, paid_at = NOW(),
+             amount = ?, installment_number = 1, total_installments = ?, due_date = ?
+         WHERE id = ? AND business_id = ?`,
+        [payment_method_id, bankId, perInstallment, N, todayStr, id, businessId],
+      );
+
+      if (bankId) {
+        await db.query(
+          "UPDATE banks SET balance = balance + ? WHERE id = ? AND business_id = ?",
+          [perInstallment, bankId, businessId],
+        );
+      }
+
+      // Create future installment records
+      const serviceOrderId = payments[0].service_order_id;
+      for (let i = 2; i <= N; i++) {
+        const dueDate = new Date(today);
+        dueDate.setMonth(dueDate.getMonth() + (i - 1));
+        const dueDateStr = `${dueDate.getFullYear()}-${String(dueDate.getMonth() + 1).padStart(2, "0")}-${String(dueDate.getDate()).padStart(2, "0")}`;
+
+        await db.query(
+          `INSERT INTO payments
+             (business_id, service_order_id, amount, status, payment_method_id, bank_id,
+              parent_payment_id, installment_number, total_installments, due_date, notes)
+           VALUES (?, ?, ?, 'pendente', ?, ?, ?, ?, ?, ?, ?)`,
+          [businessId, serviceOrderId, perInstallment, payment_method_id, bankId, id, i, N, dueDateStr, `Parcela ${i}/${N}`],
+        );
+      }
     }
 
     res.json({ mensagem: "Baixa realizada com sucesso." });
@@ -298,6 +416,45 @@ async function getPaymentMethods(req, res) {
       [businessId],
     );
 
+    // Enrich with installments and auto_baixa if migration has been applied
+    if (methods.length > 0) {
+      try {
+        const methodIds = methods.map((m) => m.id);
+        const placeholders = methodIds.map(() => "?").join(",");
+
+        const [autoCols] = await db.query(
+          `SELECT id, auto_baixa FROM payment_methods WHERE id IN (${placeholders})`,
+          methodIds,
+        );
+        const autoMap = {};
+        autoCols.forEach((row) => { autoMap[row.id] = Boolean(row.auto_baixa); });
+
+        const [installments] = await db.query(
+          `SELECT payment_method_id, installment_count, fee_percentage
+           FROM payment_method_installments
+           WHERE payment_method_id IN (${placeholders})
+           ORDER BY installment_count ASC`,
+          methodIds,
+        );
+
+        const installmentMap = {};
+        for (const inst of installments) {
+          if (!installmentMap[inst.payment_method_id]) installmentMap[inst.payment_method_id] = [];
+          installmentMap[inst.payment_method_id].push({
+            installment_count: inst.installment_count,
+            fee_percentage: Number(inst.fee_percentage),
+          });
+        }
+
+        methods.forEach((m) => {
+          m.auto_baixa = autoMap[m.id] || false;
+          m.installments = installmentMap[m.id] || [];
+        });
+      } catch {
+        methods.forEach((m) => { m.auto_baixa = false; m.installments = []; });
+      }
+    }
+
     res.json({ methods });
   } catch (error) {
     res.status(500).json({ mensagem: "Erro ao buscar formas de pagamento.", erro: error.message });
@@ -307,20 +464,43 @@ async function getPaymentMethods(req, res) {
 async function createPaymentMethod(req, res) {
   try {
     const businessId = req.user.business_id;
-    const { name, bank_id } = req.body;
+    const { name, bank_id, auto_baixa, installments } = req.body;
 
     if (!name || !name.trim()) {
       return res.status(400).json({ mensagem: "Nome é obrigatório." });
     }
 
-    const [result] = await db.query(
-      "INSERT INTO payment_methods (business_id, name, bank_id) VALUES (?, ?, ?)",
-      [businessId, name.trim(), bank_id || null],
-    );
+    let result;
+    try {
+      [result] = await db.query(
+        "INSERT INTO payment_methods (business_id, name, bank_id, auto_baixa) VALUES (?, ?, ?, ?)",
+        [businessId, name.trim(), bank_id || null, auto_baixa ? 1 : 0],
+      );
+    } catch {
+      [result] = await db.query(
+        "INSERT INTO payment_methods (business_id, name, bank_id) VALUES (?, ?, ?)",
+        [businessId, name.trim(), bank_id || null],
+      );
+    }
+
+    const methodId = result.insertId;
+
+    if (Array.isArray(installments) && installments.length > 0) {
+      try {
+        for (const inst of installments) {
+          if (Number(inst.installment_count) >= 1) {
+            await db.query(
+              "INSERT INTO payment_method_installments (payment_method_id, installment_count, fee_percentage) VALUES (?, ?, ?)",
+              [methodId, inst.installment_count, inst.fee_percentage || 0],
+            );
+          }
+        }
+      } catch { /* migration not applied yet */ }
+    }
 
     res.status(201).json({
       mensagem: "Forma de pagamento criada com sucesso.",
-      method: { id: result.insertId, name: name.trim(), is_active: 1, bank_id: bank_id || null },
+      method: { id: methodId, name: name.trim(), is_active: 1, bank_id: bank_id || null, auto_baixa: Boolean(auto_baixa) },
     });
   } catch (error) {
     res.status(500).json({ mensagem: "Erro ao criar forma de pagamento.", erro: error.message });
@@ -331,20 +511,44 @@ async function updatePaymentMethod(req, res) {
   try {
     const businessId = req.user.business_id;
     const { id } = req.params;
-    const { name, bank_id, is_active } = req.body;
+    const { name, bank_id, is_active, auto_baixa, installments } = req.body;
 
     if (!name || !name.trim()) {
       return res.status(400).json({ mensagem: "Nome é obrigatório." });
     }
 
-    const [result] = await db.query(
-      "UPDATE payment_methods SET name = ?, bank_id = ?, is_active = ? WHERE id = ? AND business_id = ?",
-      [name.trim(), bank_id || null, is_active ? 1 : 0, id, businessId],
-    );
+    let result;
+    try {
+      [result] = await db.query(
+        "UPDATE payment_methods SET name = ?, bank_id = ?, is_active = ?, auto_baixa = ? WHERE id = ? AND business_id = ?",
+        [name.trim(), bank_id || null, is_active ? 1 : 0, auto_baixa ? 1 : 0, id, businessId],
+      );
+    } catch {
+      [result] = await db.query(
+        "UPDATE payment_methods SET name = ?, bank_id = ?, is_active = ? WHERE id = ? AND business_id = ?",
+        [name.trim(), bank_id || null, is_active ? 1 : 0, id, businessId],
+      );
+    }
 
     if (result.affectedRows === 0) {
       return res.status(404).json({ mensagem: "Forma de pagamento não encontrada." });
     }
+
+    // Replace all installments (only if migration applied)
+    try {
+      await db.query("DELETE FROM payment_method_installments WHERE payment_method_id = ?", [id]);
+
+      if (Array.isArray(installments) && installments.length > 0) {
+        for (const inst of installments) {
+          if (Number(inst.installment_count) >= 1) {
+            await db.query(
+              "INSERT INTO payment_method_installments (payment_method_id, installment_count, fee_percentage) VALUES (?, ?, ?)",
+              [id, inst.installment_count, inst.fee_percentage || 0],
+            );
+          }
+        }
+      }
+    } catch { /* migration not applied yet */ }
 
     res.json({ mensagem: "Forma de pagamento atualizada com sucesso." });
   } catch (error) {

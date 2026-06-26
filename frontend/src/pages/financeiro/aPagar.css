@@ -12,21 +12,17 @@
 
 .ap-error { background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; border-radius: 12px; padding: 10px 14px; font-size: .88rem; margin-bottom: 14px; }
 
-.ap-date-selector { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
-.ap-date-picker-box { display: inline-flex; align-items: center; gap: 2px; padding: 4px 5px; border-radius: 999px; background: #fff; box-shadow: 0 8px 24px rgba(20,33,29,.08); }
-.ap-date-nav-btn { width: 30px; height: 30px; border: none; border-radius: 999px; background: transparent; color: #14211d; font-size: 1.25rem; font-weight: 600; display: flex; align-items: center; justify-content: center; cursor: pointer; transform: translateY(-3px); }
-.ap-date-nav-btn span { display: block; line-height: 1; transform: translateY(2px); }
-.ap-date-nav-btn:hover { background: #eef3f0; }
-.ap-date-center-btn { min-height: 30px; border: none; background: transparent; padding: 0 4px; display: flex; align-items: center; gap: 4px; cursor: pointer; transform: translateY(1px); }
-.ap-date-display, .ap-date-sep, .ap-date-weekday { color: #14211d; line-height: 1; display: flex; align-items: center; }
-.ap-date-display { font-size: 1.1rem; font-weight: 800; }
-.ap-date-sep { font-size: .9rem; font-weight: 800; }
-.ap-date-weekday { font-size: 1rem; font-weight: 800; }
+.ap-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 16px; }
+.ap-toolbar-right { display: flex; align-items: center; gap: 8px; }
+.ap-toolbar-label { font-size: 1.1rem; font-weight: 900; color: #14211d; letter-spacing: -.03em; }
 
-.ap-add-btn { width: 34px; height: 34px; border: none; border-radius: 50%; background: #2f5249; color: #fff; font-size: 1.5rem; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 12px rgba(47,82,73,.25); flex-shrink: 0; line-height: 1; }
-.ap-add-btn:active { transform: scale(.94); }
+.ap-recurrence-badge { font-size: .72rem; font-weight: 700; color: #2f5249; }
 
-.ap-filter-btn { width: 34px; height: 34px; min-width: 34px; border: 1.5px solid #dde4df; border-radius: 12px; background: #fff; color: #64716d; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.ap-add-btn { width: 40px; height: 40px; min-width: 40px; border: none; border-radius: 14px; background: #2f5249; color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 8px 20px rgba(47,82,73,.22); transition: .2s ease; }
+.ap-add-btn svg { width: 22px; height: 22px; fill: currentColor; }
+.ap-add-btn:hover { transform: translateY(-1px); }
+
+.ap-filter-btn { width: 40px; height: 40px; min-width: 40px; border: 1.5px solid #dde4df; border-radius: 14px; background: #fff; color: #64716d; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .ap-filter-btn.active { background: #2f5249; border-color: #2f5249; color: #fff; }
 .ap-filter-btn:active { transform: scale(.95); }
 
@@ -64,21 +60,6 @@
 .ap-empty { padding: 40px 20px; text-align: center; color: #64716d; }
 .ap-empty strong { display: block; font-size: 1rem; color: #14211d; margin-bottom: 6px; }
 .ap-empty p { font-size: .88rem; }
-
-/* Date modal */
-.ap-date-modal-overlay { position: fixed; inset: 0; z-index: 50; background: rgba(20,33,29,.35); display: flex; align-items: center; justify-content: center; padding: 20px; }
-.ap-date-modal { width: 100%; max-width: 340px; background: #fff; border-radius: 26px; padding: 20px; box-shadow: 0 24px 60px rgba(20,33,29,.18); }
-.ap-date-modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
-.ap-date-modal-header strong { font-size: 1.15rem; font-weight: 800; color: #14211d; }
-.ap-date-modal-header button { width: 34px; height: 34px; border: none; border-radius: 999px; background: #eef3f0; color: #14211d; font-size: 1.2rem; font-weight: 800; cursor: pointer; }
-.ap-date-modal-body { display: flex; flex-direction: column; gap: 8px; }
-.ap-date-modal-body label { font-size: .82rem; font-weight: 800; color: #7b8580; }
-.ap-date-modal-body input { width: 100%; height: 46px; border: 1px solid #dfe7e2; border-radius: 16px; padding: 0 14px; font-size: 1rem; font-weight: 700; color: #14211d; outline: none; box-sizing: border-box; }
-.ap-date-modal-body input:focus { border-color: #2f5249; }
-.ap-date-modal-actions { display: flex; gap: 10px; margin-top: 18px; }
-.ap-date-modal-actions button { flex: 1; height: 44px; border: none; border-radius: 16px; font-size: .9rem; font-weight: 800; cursor: pointer; }
-.ap-date-modal-today { background: #eef3f0; color: #14211d; }
-.ap-date-modal-confirm { background: #2f5249; color: #fff; }
 
 /* Main modal */
 .ap-modal-overlay { position: fixed; inset: 0; z-index: 35; background: rgba(20,33,29,.42); display: flex; align-items: flex-end; justify-content: center; padding: 14px; }

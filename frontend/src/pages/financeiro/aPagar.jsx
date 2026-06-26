@@ -12,8 +12,14 @@ import "./aPagar.css";
 const BRL = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 
 const EMPTY_FILTERS = { status: "", bank_id: "", amount_min: "", amount_max: "", description: "" };
-const EMPTY_FORM = { description: "", amount: "", due_date: "" };
-const WEEKDAYS = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
+const EMPTY_FORM = { description: "", amount: "", due_date: "", recurrence: "none" };
+
+const RECURRENCE_LABELS = {
+  weekly: "Semanal",
+  biweekly: "Quinzenal",
+  monthly: "Mensal",
+  yearly: "Anual",
+};
 
 function getLocalDateString(date = new Date()) {
   const y = date.getFullYear();
@@ -22,19 +28,23 @@ function getLocalDateString(date = new Date()) {
   return `${y}-${m}-${d}`;
 }
 
-function formatDisplayDate(dateStr) {
-  const [, month, day] = dateStr.split("-");
-  return `${day}/${month}`;
-}
-
-function getWeekdayName(dateStr) {
-  return WEEKDAYS[new Date(`${dateStr}T00:00:00`).getDay()];
-}
-
 function formatDate(dateStr) {
   if (!dateStr) return "-";
   const [y, m, d] = dateStr.split("T")[0].split("-");
   return `${d}/${m}/${y}`;
+}
+
+function formatCurrencyInput(value) {
+  const numbers = String(value).replace(/\D/g, "");
+  if (!numbers) return "";
+  const amount = Number(numbers) / 100;
+  return amount.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
+function currencyToNumber(value) {
+  const numbers = String(value).replace(/\D/g, "");
+  if (!numbers) return 0;
+  return Number(numbers) / 100;
 }
 
 function APagar() {
@@ -42,10 +52,6 @@ function APagar() {
   const [banks, setBanks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
-  const [selectedDate, setSelectedDate] = useState(getLocalDateString());
-  const [dateModalOpen, setDateModalOpen] = useState(false);
-  const [temporaryDate, setTemporaryDate] = useState("");
 
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [tempFilters, setTempFilters] = useState(EMPTY_FILTERS);
@@ -104,27 +110,6 @@ function APagar() {
     return Object.values(filters).some((v) => v !== "");
   }
 
-  function changeDate(days) {
-    const d = new Date(`${selectedDate}T00:00:00`);
-    d.setDate(d.getDate() + days);
-    setSelectedDate(getLocalDateString(d));
-  }
-
-  function openDateModal() {
-    setTemporaryDate(selectedDate);
-    setDateModalOpen(true);
-  }
-
-  function confirmDate() {
-    if (!temporaryDate) return;
-    setSelectedDate(temporaryDate);
-    setDateModalOpen(false);
-  }
-
-  function goToToday() {
-    setTemporaryDate(getLocalDateString());
-  }
-
   function openFilterModal() {
     setTempFilters({ ...filters });
     setFilterModalOpen(true);
@@ -135,17 +120,17 @@ function APagar() {
     const applied = { ...tempFilters };
     setFilters(applied);
     setFilterModalOpen(false);
-    loadWithParams(selectedDate, applied);
+    loadData(applied);
   }
 
   function clearFilter() {
     setTempFilters(EMPTY_FILTERS);
     setFilters(EMPTY_FILTERS);
     setFilterModalOpen(false);
-    loadWithParams(selectedDate, EMPTY_FILTERS);
+    loadData(EMPTY_FILTERS);
   }
 
-  async function loadWithParams(date, activeFilters) {
+  async function loadData(activeFilters = filters) {
     try {
       setLoading(true);
       setError("");
@@ -162,15 +147,16 @@ function APagar() {
         return;
       }
 
-      const params = new URLSearchParams({ date });
+      const params = new URLSearchParams();
       if (activeFilters.status) params.append("status", activeFilters.status);
       if (activeFilters.bank_id) params.append("bank_id", activeFilters.bank_id);
       if (activeFilters.amount_min) params.append("amount_min", activeFilters.amount_min);
       if (activeFilters.amount_max) params.append("amount_max", activeFilters.amount_max);
       if (activeFilters.description) params.append("description", activeFilters.description);
 
+      const qs = params.toString();
       const [payablesRes, banksRes] = await Promise.all([
-        apiRequest(`/api/payables?${params.toString()}`),
+        apiRequest(`/api/payables${qs ? `?${qs}` : ""}`),
         apiRequest("/api/banks"),
       ]);
 
@@ -185,7 +171,7 @@ function APagar() {
 
   function openCreate() {
     setFormModal("create");
-    setForm({ ...EMPTY_FORM, due_date: selectedDate });
+    setForm({ ...EMPTY_FORM, due_date: getLocalDateString() });
     setFormError("");
   }
 
@@ -193,8 +179,9 @@ function APagar() {
     setFormModal(payable);
     setForm({
       description: payable.description,
-      amount: String(payable.amount),
-      due_date: payable.due_date ? payable.due_date.split("T")[0] : selectedDate,
+      amount: formatCurrencyInput(String(Math.round(Number(payable.amount) * 100))),
+      due_date: payable.due_date ? payable.due_date.split("T")[0] : getLocalDateString(),
+      recurrence: payable.recurrence || "none",
     });
     setFormError("");
   }
@@ -207,32 +194,24 @@ function APagar() {
   async function savePayable(e) {
     e.preventDefault();
     if (!form.description.trim()) { setFormError("Descrição é obrigatória."); return; }
-    if (!form.amount || Number(form.amount) <= 0) { setFormError("Valor deve ser maior que zero."); return; }
+    if (!form.amount || currencyToNumber(form.amount) <= 0) { setFormError("Valor deve ser maior que zero."); return; }
     if (!form.due_date) { setFormError("Data de vencimento é obrigatória."); return; }
     try {
       setSaving(true);
       setFormError("");
+      const body = {
+        description: form.description.trim(),
+        amount: currencyToNumber(form.amount),
+        due_date: form.due_date,
+        recurrence: form.recurrence !== "none" ? form.recurrence : null,
+      };
       if (formModal === "create") {
-        await apiRequest("/api/payables", {
-          method: "POST",
-          body: JSON.stringify({
-            description: form.description.trim(),
-            amount: Number(form.amount),
-            due_date: form.due_date,
-          }),
-        });
+        await apiRequest("/api/payables", { method: "POST", body: JSON.stringify(body) });
       } else {
-        await apiRequest(`/api/payables/${formModal.id}`, {
-          method: "PUT",
-          body: JSON.stringify({
-            description: form.description.trim(),
-            amount: Number(form.amount),
-            due_date: form.due_date,
-          }),
-        });
+        await apiRequest(`/api/payables/${formModal.id}`, { method: "PUT", body: JSON.stringify(body) });
       }
       closeFormModal();
-      loadWithParams(selectedDate, filters);
+      loadData(filters);
     } catch (err) {
       setFormError(err.message);
     } finally {
@@ -256,7 +235,7 @@ function APagar() {
         body: JSON.stringify({ bank_id: Number(selectedBank) }),
       });
       setBaixaModal(null);
-      loadWithParams(selectedDate, filters);
+      loadData(filters);
     } catch (err) {
       setBaixaError(err.message);
     } finally {
@@ -275,7 +254,7 @@ function APagar() {
       setReopenError("");
       await apiRequest(`/api/payables/${reopenModal.id}/reopen`, { method: "PUT" });
       setReopenModal(null);
-      loadWithParams(selectedDate, filters);
+      loadData(filters);
     } catch (err) {
       setReopenError(err.message);
     } finally {
@@ -289,7 +268,7 @@ function APagar() {
       setDeleting(true);
       await apiRequest(`/api/payables/${deleteModal.id}`, { method: "DELETE" });
       setDeleteModal(null);
-      loadWithParams(selectedDate, filters);
+      loadData(filters);
     } catch (err) {
       setError(err.message);
       setDeleteModal(null);
@@ -309,8 +288,8 @@ function APagar() {
   }
 
   useEffect(() => {
-    loadWithParams(selectedDate, filters);
-  }, [selectedDate]);
+    loadData(EMPTY_FILTERS);
+  }, []);
 
   if (loading) {
     return (
@@ -436,25 +415,6 @@ function APagar() {
         </div>
       )}
 
-      {dateModalOpen && (
-        <div className="ap-date-modal-overlay" onClick={() => setDateModalOpen(false)}>
-          <section className="ap-date-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="ap-date-modal-header">
-              <strong>Escolher data</strong>
-              <button type="button" onClick={() => setDateModalOpen(false)}>×</button>
-            </div>
-            <div className="ap-date-modal-body">
-              <label>Data</label>
-              <input type="date" value={temporaryDate} onChange={(e) => setTemporaryDate(e.target.value)} />
-            </div>
-            <div className="ap-date-modal-actions">
-              <button type="button" className="ap-date-modal-today" onClick={goToToday}>Hoje</button>
-              <button type="button" className="ap-date-modal-confirm" onClick={confirmDate}>Ir para data</button>
-            </div>
-          </section>
-        </div>
-      )}
-
       {filterModalOpen && (
         <div className="ap-modal-overlay" onClick={() => setFilterModalOpen(false)}>
           <section className="ap-modal" onClick={(e) => e.stopPropagation()}>
@@ -555,12 +515,10 @@ function APagar() {
                 <div className="ap-form-group">
                   <label>Valor</label>
                   <input
-                    type="number"
-                    placeholder="0,00"
-                    min="0.01"
-                    step="0.01"
+                    type="text"
+                    placeholder="R$ 0,00"
                     value={form.amount}
-                    onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))}
+                    onChange={(e) => setForm((f) => ({ ...f, amount: formatCurrencyInput(e.target.value) }))}
                   />
                 </div>
                 <div className="ap-form-group">
@@ -571,6 +529,19 @@ function APagar() {
                     onChange={(e) => setForm((f) => ({ ...f, due_date: e.target.value }))}
                   />
                 </div>
+              </div>
+              <div className="ap-form-group">
+                <label>Recorrência</label>
+                <select
+                  value={form.recurrence}
+                  onChange={(e) => setForm((f) => ({ ...f, recurrence: e.target.value }))}
+                >
+                  <option value="none">Sem recorrência</option>
+                  <option value="weekly">Semanal</option>
+                  <option value="biweekly">Quinzenal</option>
+                  <option value="monthly">Mensal</option>
+                  <option value="yearly">Anual</option>
+                </select>
               </div>
               <div className="ap-modal-actions">
                 <button type="button" className="ap-btn-secondary" onClick={closeFormModal}>Cancelar</button>
@@ -684,45 +655,37 @@ function APagar() {
           <div className="ap-header-title">
             <h1>A Pagar</h1>
           </div>
-          <button className="refresh-button" type="button" onClick={() => loadWithParams(selectedDate, filters)} aria-label="Atualizar">↻</button>
+          <button className="refresh-button" type="button" onClick={() => loadData(filters)} aria-label="Atualizar">↻</button>
         </header>
 
         {error && <div className="ap-error">{error}</div>}
 
-        <div className="ap-date-selector">
-          <div className="ap-date-picker-box">
-            <button type="button" className="ap-date-nav-btn" onClick={() => changeDate(-1)} aria-label="Dia anterior">
-              <span>‹</span>
+        <div className="ap-toolbar">
+          <span className="ap-toolbar-label">Contas a pagar</span>
+          <div className="ap-toolbar-right">
+            <button
+              type="button"
+              className={`ap-filter-btn${hasActiveFilter() ? " active" : ""}`}
+              onClick={openFilterModal}
+              aria-label="Filtrar"
+            >
+              <svg viewBox="0 0 24 24" fill="currentColor" width="17" height="17">
+                <path d="M3 4.5A1.5 1.5 0 0 1 4.5 3h15A1.5 1.5 0 0 1 21 4.5v1.1a1.5 1.5 0 0 1-.44 1.06l-5.81 5.82V20a1 1 0 0 1-1.45.9l-4-2A1 1 0 0 1 9 18v-6.52L3.44 5.66A1.5 1.5 0 0 1 3 4.6V4.5Z" />
+              </svg>
             </button>
-            <button type="button" className="ap-date-center-btn" onClick={openDateModal}>
-              <strong className="ap-date-display">{formatDisplayDate(selectedDate)}</strong>
-              <span className="ap-date-sep">-</span>
-              <span className="ap-date-weekday">{getWeekdayName(selectedDate)}</span>
-            </button>
-            <button type="button" className="ap-date-nav-btn" onClick={() => changeDate(1)} aria-label="Próximo dia">
-              <span>›</span>
+            <button type="button" className="ap-add-btn" onClick={openCreate} aria-label="Nova conta">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 5a1 1 0 0 1 1 1v5h5a1 1 0 1 1 0 2h-5v5a1 1 0 1 1-2 0v-5H6a1 1 0 1 1 0-2h5V6a1 1 0 0 1 1-1Z" />
+              </svg>
             </button>
           </div>
-          <button
-            type="button"
-            className={`ap-filter-btn${hasActiveFilter() ? " active" : ""}`}
-            onClick={openFilterModal}
-            aria-label="Filtrar"
-          >
-            <svg viewBox="0 0 24 24" fill="currentColor" width="17" height="17">
-              <path d="M3 4.5A1.5 1.5 0 0 1 4.5 3h15A1.5 1.5 0 0 1 21 4.5v1.1a1.5 1.5 0 0 1-.44 1.06l-5.81 5.82V20a1 1 0 0 1-1.45.9l-4-2A1 1 0 0 1 9 18v-6.52L3.44 5.66A1.5 1.5 0 0 1 3 4.6V4.5Z" />
-            </svg>
-          </button>
-          <button type="button" className="ap-add-btn" onClick={openCreate} aria-label="Nova conta">
-            +
-          </button>
         </div>
 
         <section className="ap-panel">
           {payables.length === 0 ? (
             <div className="ap-empty">
-              <strong>Nenhuma conta para este dia</strong>
-              <p>Contas a pagar com vencimento nesta data aparecerão aqui.</p>
+              <strong>Nenhuma conta encontrada</strong>
+              <p>Crie uma nova conta a pagar usando o botão acima.</p>
             </div>
           ) : (
             <div className="ap-list">
@@ -731,11 +694,19 @@ function APagar() {
                   <div className="ap-card-info">
                     <strong className="ap-description">{p.description}</strong>
                     <div className="ap-card-sub">
-                      <span className={`ap-vencimento${isOverdue(p) ? " ap-vencimento--atrasado" : ""}`}>Venc. {formatDate(p.due_date)}</span>
+                      <span className={`ap-vencimento${isOverdue(p) ? " ap-vencimento--atrasado" : ""}`}>
+                        Venc. {formatDate(p.due_date)}
+                      </span>
                       {p.status === "pago" && p.bank_name && (
                         <>
                           <span className="ap-sep">·</span>
                           <span className="ap-bank-name">{p.bank_name}</span>
+                        </>
+                      )}
+                      {p.recurrence && p.recurrence !== "none" && RECURRENCE_LABELS[p.recurrence] && (
+                        <>
+                          <span className="ap-sep">·</span>
+                          <span className="ap-recurrence-badge">↻ {RECURRENCE_LABELS[p.recurrence]}</span>
                         </>
                       )}
                     </div>
@@ -772,8 +743,8 @@ function APagar() {
                       {p.status === "pago" && (
                         <button type="button" className="ap-action-btn" onClick={() => openReopen(p)} aria-label="Reabrir">
                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="16" height="16">
-                            <path d="M3 7v6h6" />
-                            <path d="M3.5 13A9 9 0 1 0 6 6.3" />
+                            <polyline points="10 10 4 14 10 18" />
+                            <path d="M4 14h9a5 5 0 0 0 0-10H8" />
                           </svg>
                         </button>
                       )}

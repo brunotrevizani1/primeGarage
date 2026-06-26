@@ -723,3 +723,19 @@
 .ar-filter-modal {
   max-width: 520px;
 }
+
+/* Installment & auto-baixa badges */
+.ar-installment-badge {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #2f5249;
+}
+
+.ar-auto-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #64716d;
+  background: #f1f4f2;
+  border-radius: 5px;
+  padding: 1px 5px;
+}

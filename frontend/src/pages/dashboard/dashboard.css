@@ -74,113 +74,77 @@
   font-size: 0.9rem;
 }
 
-.highlight-card {
-  background:
-    radial-gradient(
-      circle at top right,
-      rgba(151, 176, 103, 0.22),
-      transparent 34%
-    ),
-    linear-gradient(135deg, #1f3a34 0%, #2f5249 52%, #263f39 100%);
-  color: #ffffff;
-  border-radius: 30px;
-  padding: 26px 24px;
-  box-shadow: 0 20px 44px rgba(31, 58, 52, 0.28);
-  margin-bottom: 8px;
-  position: relative;
-  overflow: hidden;
-}
-
-.highlight-card::after {
-  content: "";
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-  background: rgba(227, 222, 97, 0.08);
-  position: absolute;
-  right: -42px;
-  bottom: -58px;
-}
-
-.highlight-card span {
-  display: block;
-  color: rgba(255, 255, 255, 0.72);
-  font-size: 0.86rem;
-  font-weight: 700;
-  margin-bottom: 10px;
-}
-
-.highlight-card strong {
-  display: block;
-  font-size: 2.2rem;
-  line-height: 1;
-  letter-spacing: -0.06em;
-  margin-bottom: 8px;
-}
-
-.highlight-card p {
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 0.88rem;
-}
-
-.dashboard-summary {
-  margin-top: 8px;
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
   margin-bottom: 14px;
 }
 
-.dashboard-schedule-card {
-  width: 100%;
-  min-height: 132px;
-  border: none;
+.stats-grid-single {
+  grid-template-columns: 1fr;
+}
+
+.stat-card {
   border-radius: 24px;
-  padding: 18px;
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
-  color: #ffffff;
-  box-shadow: 0 14px 30px rgba(37, 99, 235, 0.18);
-  display: block;
-  text-align: left;
-  cursor: pointer;
+  padding: 20px 18px;
+  position: relative;
   overflow: hidden;
-  position: relative;
+  min-height: 136px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
 }
 
-.dashboard-schedule-card::after {
+.stat-card::after {
   content: "";
-  width: 95px;
-  height: 95px;
+  width: 72px;
+  height: 72px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.1);
   position: absolute;
-  right: -34px;
-  bottom: -42px;
+  right: -20px;
+  bottom: -20px;
 }
 
-.dashboard-schedule-card span,
-.dashboard-schedule-card strong,
-.dashboard-schedule-card p {
-  position: relative;
-  z-index: 1;
-}
-
-.dashboard-schedule-card span {
+.stat-card span {
   display: block;
-  font-size: 0.82rem;
+  font-size: 0.7rem;
   font-weight: 800;
-  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.72;
+  margin-bottom: 8px;
 }
 
-.dashboard-schedule-card strong {
+.stat-card strong {
   display: block;
-  font-size: 2.4rem;
+  font-size: 1.55rem;
   line-height: 1;
-  letter-spacing: -0.05em;
+  letter-spacing: -0.04em;
+  font-weight: 900;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 5px;
 }
 
-.dashboard-schedule-card p {
-  margin-top: 8px;
-  font-size: 0.86rem;
-  font-weight: 700;
-  opacity: 0.9;
+.stat-card p {
+  font-size: 0.76rem;
+  opacity: 0.72;
+}
+
+.stat-card-green {
+  background: radial-gradient(circle at top right, rgba(151, 176, 103, 0.2), transparent 60%),
+    linear-gradient(145deg, #1f3a34 0%, #2f5249 100%);
+  color: #ffffff;
+  box-shadow: 0 14px 32px rgba(31, 58, 52, 0.28);
+}
+
+.stat-card-blue {
+  background: linear-gradient(145deg, #3b82f6, #2563eb);
+  color: #ffffff;
+  box-shadow: 0 14px 32px rgba(37, 99, 235, 0.22);
 }
 
 .queue-section {
@@ -309,6 +273,18 @@
 .order-main p {
   color: #64716d;
   font-size: 0.82rem;
+}
+
+.order-customer {
+  color: #14211d !important;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.order-vehicle-model {
+  color: #8a9590 !important;
+  font-size: 0.76rem !important;
+  margin-top: 2px;
 }
 
 .status-badge {
@@ -467,6 +443,10 @@
   display: flex;
   flex-direction: column;
   gap: 7px;
+}
+
+.filter-group-full {
+  grid-column: 1 / -1;
 }
 
 .filter-group label {

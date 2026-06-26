@@ -14,7 +14,10 @@ function Dashboard() {
   const [business, setBusiness] = useState(null);
   const [finance, setFinance] = useState(null);
   const [orders, setOrders] = useState([]);
-  const [todaySchedules, setTodaySchedules] = useState(0);
+  const [todayStats, setTodayStats] = useState({
+    agendado: 0, na_fila: 0, em_lavagem: 0, pronto: 0, entregue: 0, cancelado: 0, total: 0,
+  });
+  const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const [servicesMenuOpen, setServicesMenuOpen] = useState(false);
@@ -28,10 +31,9 @@ function Dashboard() {
   const [userRole, setUserRole] = useState(getSavedRole());
 
   const [filters, setFilters] = useState({
-    startDate: "",
-    endDate: "",
-    status: "todos",
     plate: "",
+    customer: "",
+    service: "",
   });
 
   const canManageSettings = hasPermission(
@@ -49,17 +51,19 @@ function Dashboard() {
 
   const canViewFinance = userRole === "owner" || userRole === "super_admin";
 
-  async function loadTodaySchedules() {
+  async function loadTodayStats() {
     const today = new Date().toISOString().slice(0, 10);
-
     const response = await apiRequest(`/api/orders?date=${today}`);
     const todayOrders = response.orders || [];
 
-    const scheduledCount = todayOrders.filter(
-      (order) => order.status === "agendado",
-    ).length;
+    const counts = { agendado: 0, na_fila: 0, em_lavagem: 0, pronto: 0, entregue: 0, cancelado: 0 };
+    todayOrders.forEach((order) => {
+      if (Object.prototype.hasOwnProperty.call(counts, order.status)) {
+        counts[order.status]++;
+      }
+    });
 
-    setTodaySchedules(scheduledCount);
+    setTodayStats({ ...counts, total: todayOrders.length });
   }
 
   function getFirstAllowedPath(permissions, role) {
@@ -95,35 +99,22 @@ function Dashboard() {
 
   function buildFilterQuery(customFilters = filters) {
     const params = new URLSearchParams();
-
-    if (customFilters.startDate) {
-      params.append("startDate", customFilters.startDate);
-    }
-
-    if (customFilters.endDate) {
-      params.append("endDate", customFilters.endDate);
-    }
-
-    if (customFilters.status && customFilters.status !== "todos") {
-      params.append("status", customFilters.status);
-    }
+    const today = new Date().toISOString().slice(0, 10);
+    params.append("date", today);
 
     if (customFilters.plate.trim()) {
       params.append("plate", customFilters.plate.trim());
     }
 
-    const query = params.toString();
+    if (customFilters.customer.trim()) {
+      params.append("customer", customFilters.customer.trim());
+    }
 
-    return query ? `/api/orders?${query}` : "/api/orders";
+    return `/api/orders?${params.toString()}`;
   }
 
   function hasActiveFilters() {
-    return (
-      filters.startDate ||
-      filters.endDate ||
-      filters.status !== "todos" ||
-      filters.plate.trim()
-    );
+    return filters.plate.trim() || filters.customer.trim() || filters.service;
   }
 
   async function applyFilters() {
@@ -136,8 +127,13 @@ function Dashboard() {
       setError("");
 
       const ordersResponse = await apiRequest(buildFilterQuery());
+      let result = ordersResponse.orders || [];
 
-      setOrders(ordersResponse.orders || []);
+      if (filters.service) {
+        result = result.filter((order) => order.service_name === filters.service);
+      }
+
+      setOrders(result);
       setFilterOpen(false);
     } catch (error) {
       setError(error.message);
@@ -156,10 +152,9 @@ function Dashboard() {
       setError("");
 
       const cleanFilters = {
-        startDate: "",
-        endDate: "",
-        status: "todos",
         plate: "",
+        customer: "",
+        service: "",
       };
 
       setFilters(cleanFilters);
@@ -252,12 +247,19 @@ function Dashboard() {
       }
 
       if (canAccessQueue) {
-        await loadTodaySchedules();
+        await loadTodayStats();
 
         const ordersResponse = await apiRequest(buildFilterQuery());
         setOrders(ordersResponse.orders || []);
+
+        try {
+          const servicesResponse = await apiRequest("/api/services");
+          setServices(servicesResponse.services || []);
+        } catch {
+          setServices([]);
+        }
       } else {
-        setTodaySchedules(0);
+        setTodayStats({ agendado: 0, na_fila: 0, em_lavagem: 0, pronto: 0, entregue: 0, cancelado: 0, total: 0 });
         setOrders([]);
       }
     } catch (error) {
@@ -577,50 +579,10 @@ function Dashboard() {
 
             <div className="filter-form">
               <div className="filter-group">
-                <label>Data inicial</label>
-                <input
-                  type="date"
-                  value={filters.startDate}
-                  onChange={(event) =>
-                    updateFilter("startDate", event.target.value)
-                  }
-                />
-              </div>
-
-              <div className="filter-group">
-                <label>Data final</label>
-                <input
-                  type="date"
-                  value={filters.endDate}
-                  onChange={(event) =>
-                    updateFilter("endDate", event.target.value)
-                  }
-                />
-              </div>
-
-              <div className="filter-group">
-                <label>Status</label>
-                <select
-                  value={filters.status}
-                  onChange={(event) =>
-                    updateFilter("status", event.target.value)
-                  }
-                >
-                  <option value="todos">Todos</option>
-                  <option value="agendado">Agendado</option>
-                  <option value="na_fila">Na fila</option>
-                  <option value="em_lavagem">Lavando</option>
-                  <option value="pronto">Pronto</option>
-                  <option value="entregue">Entregue</option>
-                  <option value="cancelado">Cancelado</option>
-                </select>
-              </div>
-
-              <div className="filter-group">
                 <label>Placa</label>
                 <input
                   type="text"
-                  placeholder="Ex: ABC1D23"
+                  placeholder="ABC1D23"
                   value={filters.plate}
                   onChange={(event) =>
                     updateFilter(
@@ -631,6 +593,33 @@ function Dashboard() {
                     )
                   }
                 />
+              </div>
+
+              <div className="filter-group">
+                <label>Cliente</label>
+                <input
+                  type="text"
+                  placeholder="Nome do cliente"
+                  value={filters.customer}
+                  onChange={(event) =>
+                    updateFilter("customer", event.target.value)
+                  }
+                />
+              </div>
+
+              <div className="filter-group filter-group-full">
+                <label>Serviço</label>
+                <select
+                  value={filters.service}
+                  onChange={(event) => updateFilter("service", event.target.value)}
+                >
+                  <option value="">Todos os serviços</option>
+                  {services.map((service) => (
+                    <option key={service.id} value={service.name}>
+                      {service.name}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 
@@ -683,31 +672,22 @@ function Dashboard() {
 
         {error && <div className="dashboard-error">{error}</div>}
 
-        {finance && (
-          <section className="highlight-card">
-            <div>
-              <span>Entrada de hoje</span>
-              <strong>{formatMoney(finance?.total_day)}</strong>
-              <p>{finance?.paid_orders || 0} pagamentos registrados hoje</p>
-            </div>
-          </section>
-        )}
-
         {canViewQueue ? (
           <>
-            <section className="dashboard-summary">
-              <button
-                type="button"
-                className="dashboard-schedule-card"
-                onClick={() => (window.location.href = "/atendimentos")}
-              >
-                <div>
-                  <span>Agendamentos de hoje</span>
-                  <strong>{todaySchedules}</strong>
-                  <p>Atendimentos marcados para hoje</p>
+            <div className={`stats-grid${!finance ? " stats-grid-single" : ""}`}>
+              {finance && (
+                <div className="stat-card stat-card-green">
+                  <span>Entrada de hoje</span>
+                  <strong>{formatMoney(finance.total_day)}</strong>
+                  <p>{finance.paid_orders || 0} pagamentos</p>
                 </div>
-              </button>
-            </section>
+              )}
+              <div className="stat-card stat-card-blue">
+                <span>Agendados hoje</span>
+                <strong>{todayStats.agendado}</strong>
+                <p>marcados para hoje</p>
+              </div>
+            </div>
 
             <section className="queue-section">
               <div className="section-header">
@@ -752,7 +732,12 @@ function Dashboard() {
                         <div className="order-main">
                           <div>
                             <h3>{order.vehicle_plate}</h3>
-                            <p>{order.vehicle_model || "Veículo sem modelo"}</p>
+                            <p className="order-customer">{order.customer_name || "Cliente não identificado"}</p>
+                            {order.vehicle_model && (
+                              <p className="order-vehicle-model">
+                                {order.vehicle_model}{order.vehicle_color ? ` · ${order.vehicle_color}` : ""}
+                              </p>
+                            )}
                           </div>
 
                           <span
