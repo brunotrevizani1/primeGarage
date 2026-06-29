@@ -21,6 +21,7 @@ import AReceber from "./pages/financeiro/aReceber";
 import APagar from "./pages/financeiro/aPagar";
 import FormasPagamento from "./pages/financeiro/formasPagamento";
 import Banco from "./pages/financeiro/banco";
+import Relatorios from "./pages/relatorios/Relatorios";
 
 function App() {
   const path = window.location.pathname;
@@ -97,6 +98,7 @@ function App() {
   if (path === "/financeiro/a-pagar") return <APagar />;
   if (path === "/financeiro/formas-de-pagamento") return <FormasPagamento />;
   if (path === "/financeiro/banco") return <Banco />;
+  if (path === "/relatorios") return <Relatorios />;
 
   return <Login />;
 }

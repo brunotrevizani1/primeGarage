@@ -479,6 +479,15 @@ function Agenda() {
                   )}
                 </div>
               )}
+              {canViewFinance && (
+                <button
+                  type="button"
+                  onClick={() => (window.location.href = "/relatorios")}
+                >
+                  <MenuIcon name="reports" />
+                  <span>Relatórios</span>
+                </button>
+              )}
 
               {canViewCustomers && (
                 <button
