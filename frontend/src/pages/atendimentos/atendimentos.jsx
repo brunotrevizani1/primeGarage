@@ -1,4 +1,5 @@
 import MenuIcon from "../../components/MenuIcon";
+import AccountMenu from "../../components/AccountMenu";
 import { useEffect, useState } from "react";
 import { apiRequest } from "../../services/api";
 import {
@@ -599,14 +600,6 @@ function Atendimentos() {
                 </div>
               )}
             </nav>
-
-            <button
-              className="logout-button"
-              type="button"
-              onClick={handleLogout}
-            >
-              Sair da conta
-            </button>
           </aside>
         </div>
       )}
@@ -761,9 +754,7 @@ function Atendimentos() {
             <h1>Atendimentos</h1>
           </div>
 
-          <button type="button" className="refresh-button" onClick={loadOrders}>
-            ↻
-          </button>
+          <AccountMenu onLogout={handleLogout} />
         </header>
 
         {error && <div className="attendance-error">{error}</div>}

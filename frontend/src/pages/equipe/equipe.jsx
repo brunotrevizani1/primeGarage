@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import MenuIcon from "../../components/MenuIcon";
+import AccountMenu from "../../components/AccountMenu";
 import { apiRequest } from "../../services/api";
 import {
   getSavedPermissions,
@@ -36,6 +37,8 @@ function Equipe() {
     phone: "",
     password: "",
     permissions: [],
+    commission_enabled: false,
+    commission_rate: "",
   });
 
   const canManageSettings = hasPermission(
@@ -195,6 +198,8 @@ function Equipe() {
       phone: "",
       password: "",
       permissions: [],
+      commission_enabled: false,
+      commission_rate: "",
     });
 
     setEmployeeModalOpen(true);
@@ -228,6 +233,8 @@ function Equipe() {
         phone: formatPhone(employee.phone || ""),
         password: "",
         permissions: employeePermissions,
+        commission_enabled: Boolean(employee.commission_enabled),
+        commission_rate: employee.commission_rate ? String(employee.commission_rate) : "",
       });
 
       setEmployeeModalOpen(true);
@@ -497,6 +504,8 @@ function Equipe() {
         phone: onlyNumbers(form.phone),
         password: form.password.trim(),
         permissions: form.permissions,
+        commission_enabled: form.commission_enabled,
+        commission_rate: form.commission_enabled ? Number(form.commission_rate) || 0 : 0,
       };
 
       if (editingEmployee) {
@@ -507,6 +516,8 @@ function Equipe() {
             email: payload.email,
             phone: payload.phone,
             password: payload.password,
+            commission_enabled: payload.commission_enabled,
+            commission_rate: payload.commission_rate,
           }),
         });
 
@@ -847,14 +858,6 @@ function Equipe() {
                 </div>
               )}
             </nav>
-
-            <button
-              className="logout-button"
-              type="button"
-              onClick={handleLogout}
-            >
-              Sair da conta
-            </button>
           </aside>
         </div>
       )}
@@ -1031,6 +1034,36 @@ function Equipe() {
                     </div>
                   </div>
 
+                  <div className="commission-toggle-row">
+                    <div className="commission-toggle-info">
+                      <span className="commission-toggle-label">Comissão</span>
+                      <span className="commission-toggle-sub">Calcular comissão nos atendimentos</span>
+                    </div>
+                    <button
+                      type="button"
+                      className={form.commission_enabled ? "toggle-btn on" : "toggle-btn"}
+                      onClick={() => updateField("commission_enabled", !form.commission_enabled)}
+                      aria-label="Habilitar comissão"
+                    >
+                      <span className="toggle-thumb" />
+                    </button>
+                  </div>
+
+                  {form.commission_enabled && (
+                    <div className="form-group">
+                      <label>Percentual de comissão (%)</label>
+                      <input
+                        type="number"
+                        placeholder="Ex: 10"
+                        min="0"
+                        max="100"
+                        step="0.1"
+                        value={form.commission_rate}
+                        onChange={(e) => updateField("commission_rate", e.target.value)}
+                      />
+                    </div>
+                  )}
+
                   <button
                     className="save-team-button"
                     type="button"
@@ -1120,14 +1153,7 @@ function Equipe() {
             <h1>Equipe</h1>
           </div>
 
-          <button
-            className="refresh-button"
-            type="button"
-            onClick={loadData}
-            aria-label="Atualizar equipe"
-          >
-            ↻
-          </button>
+          <AccountMenu onLogout={handleLogout} />
         </header>
 
         {error && !employeeModalOpen && (

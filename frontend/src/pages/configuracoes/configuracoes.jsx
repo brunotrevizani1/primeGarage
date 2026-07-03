@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import MenuIcon from "../../components/MenuIcon";
+import AccountMenu from "../../components/AccountMenu";
 import { apiRequest } from "../../services/api";
 import {
   getSavedPermissions,
@@ -490,14 +491,6 @@ function Configuracoes() {
                 </div>
               )}
             </nav>
-
-            <button
-              className="logout-button"
-              type="button"
-              onClick={handleLogout}
-            >
-              Sair da conta
-            </button>
           </aside>
         </div>
       )}
@@ -518,14 +511,7 @@ function Configuracoes() {
             <h1>Configurações</h1>
           </div>
 
-          <button
-            className="refresh-button"
-            type="button"
-            onClick={loadSettings}
-            aria-label="Atualizar configurações"
-          >
-            ↻
-          </button>
+          <AccountMenu onLogout={handleLogout} />
         </header>
 
         {error && <div className="settings-error">{error}</div>}

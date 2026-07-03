@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import MenuIcon from "../../components/MenuIcon";
+import AccountMenu from "../../components/AccountMenu";
 import { apiRequest } from "../../services/api";
 import {
   getSavedPermissions,
@@ -419,7 +420,6 @@ function APagar() {
                 </div>
               )}
             </nav>
-            <button className="logout-button" type="button" onClick={handleLogout}>Sair da conta</button>
           </aside>
         </div>
       )}
@@ -664,7 +664,7 @@ function APagar() {
           <div className="ap-header-title">
             <h1>A Pagar</h1>
           </div>
-          <button className="refresh-button" type="button" onClick={() => loadData(filters)} aria-label="Atualizar">↻</button>
+          <AccountMenu onLogout={handleLogout} />
         </header>
 
         {error && <div className="ap-error">{error}</div>}

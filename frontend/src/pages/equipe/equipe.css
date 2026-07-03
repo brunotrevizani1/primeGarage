@@ -19,8 +19,7 @@
   margin-bottom: 22px;
 }
 
-.menu-button,
-.refresh-button {
+.menu-button {
   width: 44px;
   height: 44px;
   border: none;
@@ -45,10 +44,6 @@
   height: 2px;
   background: #14211d;
   border-radius: 999px;
-}
-
-.refresh-button {
-  font-size: 1.35rem;
 }
 
 .team-header small,
@@ -400,6 +395,70 @@
   gap: 10px;
 }
 
+/* Commission toggle */
+.commission-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: #f8faf9;
+  border: 1.5px solid #e8eeeb;
+  border-radius: 16px;
+  padding: 14px 16px;
+  margin-bottom: 4px;
+}
+
+.commission-toggle-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.commission-toggle-label {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #14211d;
+}
+
+.commission-toggle-sub {
+  font-size: 0.75rem;
+  color: #9aaba4;
+}
+
+.toggle-btn {
+  width: 46px;
+  height: 26px;
+  border-radius: 999px;
+  border: none;
+  background: #d0dbd6;
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+  transition: background 0.2s;
+  padding: 0;
+}
+
+.toggle-btn.on {
+  background: #2f5249;
+}
+
+.toggle-thumb {
+  display: block;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #ffffff;
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  transition: left 0.2s;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+}
+
+.toggle-btn.on .toggle-thumb {
+  left: 23px;
+}
+
 .back-step-button,
 .save-team-button {
   height: 54px;
@@ -472,8 +531,7 @@
   gap: 8px;
 }
 
-.side-menu-links button,
-.logout-button {
+.side-menu-links button {
   width: 100%;
   height: 48px;
   border: none;
@@ -534,12 +592,6 @@
 .submenu-links button {
   height: 40px;
   font-size: 0.86rem;
-}
-
-.logout-button {
-  margin-top: 24px;
-  background: #fee2e2;
-  color: #b91c1c;
 }
 
 .team-loading {

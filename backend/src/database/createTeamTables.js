@@ -35,6 +35,24 @@ async function createTeamTables() {
       `);
     }
 
+    const hasCommissionEnabled = await columnExists("users", "commission_enabled");
+
+    if (!hasCommissionEnabled) {
+      await db.query(`
+        ALTER TABLE users
+        ADD COLUMN commission_enabled TINYINT(1) DEFAULT 0 AFTER status
+      `);
+    }
+
+    const hasCommissionRate = await columnExists("users", "commission_rate");
+
+    if (!hasCommissionRate) {
+      await db.query(`
+        ALTER TABLE users
+        ADD COLUMN commission_rate DECIMAL(5,2) DEFAULT 0.00 AFTER commission_enabled
+      `);
+    }
+
     await db.query(`
       CREATE TABLE IF NOT EXISTS permissions (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -159,6 +177,22 @@ async function createTeamTables() {
         code: "excluir_funcionario",
         name: "Excluir funcionário",
         group: "Equipe",
+      },
+
+      {
+        code: "ver_agenda",
+        name: "Ver agenda",
+        group: "Agenda",
+      },
+      {
+        code: "ver_cliente",
+        name: "Ver clientes",
+        group: "Clientes",
+      },
+      {
+        code: "gerenciar_configuracoes",
+        name: "Gerenciar configurações",
+        group: "Configurações",
       },
     ];
 

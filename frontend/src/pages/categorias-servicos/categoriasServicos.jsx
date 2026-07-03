@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import MenuIcon from "../../components/MenuIcon";
+import AccountMenu from "../../components/AccountMenu";
 import { apiRequest } from "../../services/api";
 import {
   getSavedPermissions,
@@ -512,14 +513,6 @@ function CategoriasServicos() {
                 </div>
               )}
             </nav>
-
-            <button
-              className="logout-button"
-              type="button"
-              onClick={handleLogout}
-            >
-              Sair da conta
-            </button>
           </aside>
         </div>
       )}
@@ -588,14 +581,7 @@ function CategoriasServicos() {
             <h1>Categorias</h1>
           </div>
 
-          <button
-            className="refresh-button"
-            type="button"
-            onClick={loadData}
-            aria-label="Atualizar categorias"
-          >
-            ↻
-          </button>
+          <AccountMenu onLogout={handleLogout} />
         </header>
 
         {error && !categoryModalOpen && (

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import MenuIcon from "../../components/MenuIcon";
+import AccountMenu from "../../components/AccountMenu";
 import { apiRequest } from "../../services/api";
 import {
   getSavedPermissions,
@@ -558,13 +559,6 @@ function AReceber() {
                 </div>
               )}
             </nav>
-            <button
-              className="logout-button"
-              type="button"
-              onClick={handleLogout}
-            >
-              Sair da conta
-            </button>
           </aside>
         </div>
       )}
@@ -903,14 +897,7 @@ function AReceber() {
           <div className="ar-header-title">
             <h1>A Receber</h1>
           </div>
-          <button
-            className="refresh-button"
-            type="button"
-            onClick={() => loadWithParams(selectedDate, filters)}
-            aria-label="Atualizar"
-          >
-            ↻
-          </button>
+          <AccountMenu onLogout={handleLogout} />
         </header>
 
         {error && <div className="ar-error">{error}</div>}

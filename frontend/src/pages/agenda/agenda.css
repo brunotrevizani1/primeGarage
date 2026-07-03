@@ -19,8 +19,7 @@
   margin-bottom: 18px;
 }
 
-.menu-button,
-.refresh-button {
+.menu-button {
   width: 44px;
   height: 44px;
   border: none;
@@ -44,11 +43,6 @@
   height: 2px;
   background: #14211d;
   border-radius: 999px;
-}
-
-.refresh-button {
-  font-size: 1.35rem;
-  font-weight: 800;
 }
 
 .agenda-header h1 {
@@ -393,8 +387,7 @@
   display: none;
 }
 
-.side-menu-links button,
-.logout-button {
+.side-menu-links button {
   width: 100%;
   min-height: 48px;
   height: 48px;
@@ -482,13 +475,6 @@
 
 .submenu-arrow.open {
   transform: rotate(180deg);
-}
-
-.logout-button {
-  flex-shrink: 0;
-  margin-top: 16px;
-  background: #fee2e2;
-  color: #b91c1c;
 }
 
 .menu-parent-button span {

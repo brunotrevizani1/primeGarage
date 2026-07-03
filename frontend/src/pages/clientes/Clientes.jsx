@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import MenuIcon from "../../components/MenuIcon";
+import AccountMenu from "../../components/AccountMenu";
 import { apiRequest } from "../../services/api";
 import {
   getSavedPermissions,
@@ -741,14 +742,6 @@ function Clientes() {
                 </div>
               )}
             </nav>
-
-            <button
-              className="logout-button"
-              type="button"
-              onClick={handleLogout}
-            >
-              Sair da conta
-            </button>
           </aside>
         </div>
       )}
@@ -1056,14 +1049,7 @@ function Clientes() {
             <h1>Clientes</h1>
           </div>
 
-          <button
-            className="refresh-button"
-            type="button"
-            onClick={() => loadCustomers(page, filters)}
-            aria-label="Atualizar clientes"
-          >
-            ↻
-          </button>
+          <AccountMenu onLogout={handleLogout} />
         </header>
 
         {error && !customerModalOpen && (

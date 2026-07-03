@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import MenuIcon from "../../components/MenuIcon";
+import AccountMenu from "../../components/AccountMenu";
 import { apiRequest } from "../../services/api";
 import {
   getSavedPermissions,
@@ -558,14 +559,6 @@ function Dashboard() {
                 </div>
               )}
             </nav>
-
-            <button
-              className="logout-button"
-              type="button"
-              onClick={handleLogout}
-            >
-              Sair da conta
-            </button>
           </aside>
         </div>
       )}
@@ -670,13 +663,7 @@ function Dashboard() {
             <p>{user?.name || "Usuário"}</p>
           </div>
 
-          <button
-            className="refresh-button"
-            type="button"
-            onClick={loadDashboard}
-          >
-            ↻
-          </button>
+          <AccountMenu onLogout={handleLogout} />
         </header>
 
         {error && <div className="dashboard-error">{error}</div>}

@@ -1,6 +1,9 @@
 const db = require("../database/connection");
 
 function getRange(query) {
+  if (query.start && query.end) {
+    return { start: query.start, end: query.end };
+  }
   const now = new Date();
   const year = Number(query.year) || now.getFullYear();
   const month = Number(query.month) || now.getMonth() + 1;
@@ -107,55 +110,27 @@ async function getOrdersReport(req, res) {
     const [[summary]] = await db.query(
       `SELECT
         COUNT(*) AS total,
-        SUM(CASE WHEN status = 'entregue' THEN 1 ELSE 0 END) AS delivered,
-        SUM(CASE WHEN status = 'cancelado' THEN 1 ELSE 0 END) AS cancelled,
-        COALESCE(SUM(CASE WHEN status = 'entregue' THEN price ELSE 0 END), 0) AS total_revenue,
-        COALESCE(AVG(CASE WHEN status = 'entregue' THEN price END), 0) AS avg_ticket
+        SUM(CASE WHEN status = 'agendado'  THEN 1 ELSE 0 END) AS agendado,
+        SUM(CASE WHEN status = 'na_fila'   THEN 1 ELSE 0 END) AS na_fila,
+        SUM(CASE WHEN status = 'em_lavagem'THEN 1 ELSE 0 END) AS em_lavagem,
+        SUM(CASE WHEN status = 'pronto'    THEN 1 ELSE 0 END) AS pronto,
+        SUM(CASE WHEN status = 'entregue'  THEN 1 ELSE 0 END) AS entregue,
+        SUM(CASE WHEN status = 'cancelado' THEN 1 ELSE 0 END) AS cancelado
       FROM service_orders
       WHERE business_id = ?
         AND DATE(created_at) BETWEEN ? AND ?`,
       [businessId, start, end],
     );
 
-    const [byService] = await db.query(
-      `SELECT
-        sv.name AS service_name,
-        COUNT(*) AS count,
-        COALESCE(SUM(so.price), 0) AS revenue
-      FROM service_orders so
-      INNER JOIN services sv ON so.service_id = sv.id
-      WHERE so.business_id = ?
-        AND DATE(so.created_at) BETWEEN ? AND ?
-        AND so.status = 'entregue'
-      GROUP BY sv.id, sv.name
-      ORDER BY count DESC
-      LIMIT 10`,
-      [businessId, start, end],
-    );
-
-    const [byDay] = await db.query(
-      `SELECT
-        DATE(created_at) AS date,
-        COUNT(*) AS count,
-        COALESCE(SUM(CASE WHEN status = 'entregue' THEN price ELSE 0 END), 0) AS revenue
-      FROM service_orders
-      WHERE business_id = ?
-        AND DATE(created_at) BETWEEN ? AND ?
-      GROUP BY DATE(created_at)
-      ORDER BY date ASC`,
-      [businessId, start, end],
-    );
-
     res.json({
       period: { start, end },
       total: Number(summary.total),
-      delivered: Number(summary.delivered),
-      cancelled: Number(summary.cancelled),
-      in_progress: Number(summary.total) - Number(summary.delivered) - Number(summary.cancelled),
-      total_revenue: Number(summary.total_revenue),
-      avg_ticket: Number(summary.avg_ticket),
-      by_service: byService.map((r) => ({ ...r, revenue: Number(r.revenue) })),
-      by_day: byDay.map((r) => ({ ...r, revenue: Number(r.revenue), date: String(r.date).split("T")[0] })),
+      agendado: Number(summary.agendado),
+      na_fila: Number(summary.na_fila),
+      em_lavagem: Number(summary.em_lavagem),
+      pronto: Number(summary.pronto),
+      entregue: Number(summary.entregue),
+      cancelado: Number(summary.cancelado),
     });
   } catch (error) {
     res.status(500).json({ mensagem: "Erro ao gerar relatório de atendimentos.", erro: error.message });
@@ -176,8 +151,9 @@ async function getCustomersReport(req, res) {
       [start, end, businessId],
     );
 
-    const [topCustomers] = await db.query(
+    const [customers] = await db.query(
       `SELECT
+        c.id AS customer_id,
         c.name,
         c.phone,
         COUNT(so.id) AS total_orders,
@@ -189,36 +165,135 @@ async function getCustomersReport(req, res) {
         AND DATE(so.created_at) BETWEEN ? AND ?
       GROUP BY c.id, c.name, c.phone
       ORDER BY total_orders DESC, total_spent DESC
-      LIMIT 10`,
+      LIMIT 30`,
       [businessId, start, end],
     );
 
-    const [newCustomers] = await db.query(
-      `SELECT
-        c.name,
-        c.phone,
-        c.created_at,
-        v.plate AS vehicle_plate,
-        v.model AS vehicle_model
-      FROM customers c
-      INNER JOIN vehicles v ON v.customer_id = c.id AND v.business_id = c.business_id
-      WHERE c.business_id = ?
-        AND DATE(c.created_at) BETWEEN ? AND ?
-      ORDER BY c.created_at DESC
-      LIMIT 20`,
-      [businessId, start, end],
-    );
+    const customerIds = customers.map((c) => c.customer_id);
+    let servicesByCustomer = {};
+
+    if (customerIds.length > 0) {
+      const placeholders = customerIds.map(() => "?").join(",");
+      const [serviceRows] = await db.query(
+        `SELECT
+          c.id AS customer_id,
+          sv.name AS service_name,
+          COUNT(*) AS count
+        FROM customers c
+        INNER JOIN vehicles v ON v.customer_id = c.id AND v.business_id = c.business_id
+        INNER JOIN service_orders so ON so.vehicle_id = v.id AND so.status = 'entregue'
+        INNER JOIN services sv ON so.service_id = sv.id
+        WHERE c.business_id = ?
+          AND c.id IN (${placeholders})
+          AND DATE(so.created_at) BETWEEN ? AND ?
+        GROUP BY c.id, sv.id, sv.name
+        ORDER BY c.id, count DESC`,
+        [businessId, ...customerIds, start, end],
+      );
+
+      for (const row of serviceRows) {
+        if (!servicesByCustomer[row.customer_id]) servicesByCustomer[row.customer_id] = [];
+        servicesByCustomer[row.customer_id].push({ name: row.service_name, count: Number(row.count) });
+      }
+    }
 
     res.json({
       period: { start, end },
       total_customers: Number(totals.total_customers),
       new_in_period: Number(totals.new_in_period),
-      top_customers: topCustomers.map((r) => ({ ...r, total_spent: Number(r.total_spent) })),
-      new_customers: newCustomers,
+      customers: customers.map((c) => ({
+        name: c.name,
+        phone: c.phone,
+        total_orders: Number(c.total_orders),
+        total_spent: Number(c.total_spent),
+        services: servicesByCustomer[c.customer_id] || [],
+      })),
     });
   } catch (error) {
     res.status(500).json({ mensagem: "Erro ao gerar relatório de clientes.", erro: error.message });
   }
 }
 
-module.exports = { getFinancialReport, getOrdersReport, getCustomersReport };
+async function getTeamReport(req, res) {
+  try {
+    const businessId = req.user.business_id;
+    const { start, end } = getRange(req.query);
+
+    const [employees] = await db.query(
+      `SELECT id, name, commission_enabled, commission_rate
+       FROM users
+       WHERE business_id = ? AND role = 'employee' AND status = 'active'
+       ORDER BY name ASC`,
+      [businessId],
+    );
+
+    if (employees.length === 0) {
+      return res.json({ period: { start, end }, team: [] });
+    }
+
+    const employeeIds = employees.map((e) => e.id);
+    const placeholders = employeeIds.map(() => "?").join(",");
+
+    const [orderRows] = await db.query(
+      `SELECT
+         responsible_user_id AS user_id,
+         COUNT(*) AS total_orders,
+         COALESCE(SUM(price), 0) AS total_value
+       FROM service_orders
+       WHERE business_id = ?
+         AND responsible_user_id IN (${placeholders})
+         AND status = 'entregue'
+         AND DATE(created_at) BETWEEN ? AND ?
+       GROUP BY responsible_user_id`,
+      [businessId, ...employeeIds, start, end],
+    );
+
+    const [serviceRows] = await db.query(
+      `SELECT
+         so.responsible_user_id AS user_id,
+         sv.name AS service_name,
+         COUNT(*) AS count
+       FROM service_orders so
+       INNER JOIN services sv ON so.service_id = sv.id
+       WHERE so.business_id = ?
+         AND so.responsible_user_id IN (${placeholders})
+         AND so.status = 'entregue'
+         AND DATE(so.created_at) BETWEEN ? AND ?
+       GROUP BY so.responsible_user_id, sv.id, sv.name
+       ORDER BY so.responsible_user_id, count DESC`,
+      [businessId, ...employeeIds, start, end],
+    );
+
+    const ordersByEmployee = {};
+    for (const r of orderRows) {
+      ordersByEmployee[r.user_id] = { total_orders: Number(r.total_orders), total_value: Number(r.total_value) };
+    }
+
+    const servicesByEmployee = {};
+    for (const r of serviceRows) {
+      if (!servicesByEmployee[r.user_id]) servicesByEmployee[r.user_id] = [];
+      servicesByEmployee[r.user_id].push({ name: r.service_name, count: Number(r.count) });
+    }
+
+    const team = employees.map((e) => {
+      const stats = ordersByEmployee[e.id] || { total_orders: 0, total_value: 0 };
+      const rate = Number(e.commission_rate) || 0;
+      const commission = e.commission_enabled ? stats.total_value * (rate / 100) : null;
+      return {
+        name: e.name,
+        commission_enabled: Boolean(e.commission_enabled),
+        commission_rate: rate,
+        total_orders: stats.total_orders,
+        total_value: stats.total_value,
+        commission,
+        services: servicesByEmployee[e.id] || [],
+      };
+    });
+
+    res.json({ period: { start, end }, team });
+  } catch (error) {
+    res.status(500).json({ mensagem: "Erro ao gerar relatório da equipe.", erro: error.message });
+  }
+}
+
+module.exports = { getFinancialReport, getOrdersReport, getCustomersReport, getTeamReport };

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import MenuIcon from "../../components/MenuIcon";
+import AccountMenu from "../../components/AccountMenu";
 import { apiRequest } from "../../services/api";
 import {
   getSavedPermissions,
@@ -474,13 +475,6 @@ function Banco() {
                 </div>
               )}
             </nav>
-            <button
-              className="logout-button"
-              type="button"
-              onClick={handleLogout}
-            >
-              Sair da conta
-            </button>
           </aside>
         </div>
       )}
@@ -643,14 +637,7 @@ function Banco() {
             <span></span>
           </button>
           <h1>Banco</h1>
-          <button
-            className="refresh-button"
-            type="button"
-            onClick={load}
-            aria-label="Atualizar"
-          >
-            ↻
-          </button>
+          <AccountMenu onLogout={handleLogout} />
         </header>
 
         {error && <div className="banco-error">{error}</div>}

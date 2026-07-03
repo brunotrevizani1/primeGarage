@@ -13,7 +13,7 @@ async function listEmployees(req, res) {
 
     const [employees] = await db.query(
       `
-      SELECT id, name, email, phone, role, created_at
+      SELECT id, name, email, phone, role, commission_enabled, commission_rate, created_at
       FROM users
       WHERE business_id = ?
       AND role = 'employee'
@@ -96,7 +96,7 @@ async function createEmployee(req, res) {
 
   try {
     const businessId = req.user.business_id;
-    const { name, email, phone, password, permissions } = req.body;
+    const { name, email, phone, password, permissions, commission_enabled, commission_rate } = req.body;
 
     if (!businessId) {
       return res.status(400).json({
@@ -148,10 +148,12 @@ async function createEmployee(req, res) {
           phone = ?,
           password = ?,
           role = 'employee',
-          status = 'active'
+          status = 'active',
+          commission_enabled = ?,
+          commission_rate = ?
         WHERE id = ?
         `,
-        [businessId, cleanName, cleanPhone, hashedPassword, existingUser.id],
+        [businessId, cleanName, cleanPhone, hashedPassword, commission_enabled ? 1 : 0, Number(commission_rate) || 0, existingUser.id],
       );
 
       await connection.query(
@@ -198,11 +200,11 @@ async function createEmployee(req, res) {
 
     const [result] = await connection.query(
       `
-      INSERT INTO users 
-      (business_id, name, email, phone, password, role, status)
-      VALUES (?, ?, ?, ?, ?, 'employee', 'active')
+      INSERT INTO users
+      (business_id, name, email, phone, password, role, status, commission_enabled, commission_rate)
+      VALUES (?, ?, ?, ?, ?, 'employee', 'active', ?, ?)
       `,
-      [businessId, cleanName, cleanEmail, cleanPhone, hashedPassword],
+      [businessId, cleanName, cleanEmail, cleanPhone, hashedPassword, commission_enabled ? 1 : 0, Number(commission_rate) || 0],
     );
 
     const employeeId = result.insertId;
@@ -257,7 +259,7 @@ async function updateEmployee(req, res) {
   try {
     const businessId = req.user.business_id;
     const { id } = req.params;
-    const { name, email, phone, password } = req.body;
+    const { name, email, phone, password, commission_enabled, commission_rate } = req.body;
 
     if (!businessId) {
       return res.status(400).json({
@@ -316,27 +318,30 @@ async function updateEmployee(req, res) {
       });
     }
 
+    const commissionEnabled = commission_enabled ? 1 : 0;
+    const commissionRate = Number(commission_rate) || 0;
+
     if (password && password.trim()) {
       const hashedPassword = await bcrypt.hash(password.trim(), 10);
 
       await connection.query(
         `
         UPDATE users
-        SET name = ?, email = ?, phone = ?, password = ?
+        SET name = ?, email = ?, phone = ?, password = ?, commission_enabled = ?, commission_rate = ?
         WHERE id = ?
         AND business_id = ?
         `,
-        [cleanName, cleanEmail, cleanPhone, hashedPassword, id, businessId],
+        [cleanName, cleanEmail, cleanPhone, hashedPassword, commissionEnabled, commissionRate, id, businessId],
       );
     } else {
       await connection.query(
         `
         UPDATE users
-        SET name = ?, email = ?, phone = ?
+        SET name = ?, email = ?, phone = ?, commission_enabled = ?, commission_rate = ?
         WHERE id = ?
         AND business_id = ?
         `,
-        [cleanName, cleanEmail, cleanPhone, id, businessId],
+        [cleanName, cleanEmail, cleanPhone, commissionEnabled, commissionRate, id, businessId],
       );
     }
 
