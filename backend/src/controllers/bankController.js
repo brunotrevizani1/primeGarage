@@ -23,13 +23,13 @@ async function createBank(req, res) {
     }
 
     const [result] = await db.query(
-      "INSERT INTO banks (business_id, name, balance) VALUES (?, ?, ?)",
+      "INSERT INTO banks (business_id, name, balance) VALUES (?, ?, ?) RETURNING id",
       [businessId, name.trim(), Number(initial_balance) || 0],
     );
 
     res.status(201).json({
       mensagem: "Banco criado com sucesso.",
-      bank: { id: result.insertId, name: name.trim(), balance: Number(initial_balance) || 0, is_active: 1 },
+      bank: { id: result.insertId, name: name.trim(), balance: Number(initial_balance) || 0, is_active: true },
     });
   } catch (error) {
     res.status(500).json({ mensagem: "Erro ao criar banco.", erro: error.message });

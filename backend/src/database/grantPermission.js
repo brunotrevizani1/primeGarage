@@ -31,7 +31,7 @@ async function grantPermission() {
       `
       INSERT INTO user_permissions (user_id, permission_id, allowed)
       VALUES (?, ?, true)
-      ON DUPLICATE KEY UPDATE allowed = true
+      ON CONFLICT (user_id, permission_id) DO UPDATE SET allowed = true
       `,
       [userId, permissionId],
     );

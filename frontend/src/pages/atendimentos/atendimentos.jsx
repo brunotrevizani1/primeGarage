@@ -18,6 +18,7 @@ function Atendimentos() {
   const [servicesMenuOpen, setServicesMenuOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const [error, setError] = useState("");
+  const [reopenConfirmId, setReopenConfirmId] = useState(null);
   const [agendaMenuOpen, setAgendaMenuOpen] = useState(false);
   const [settingsMenuOpen, setSettingsMenuOpen] = useState(false);
   const [financeMenuOpen, setFinanceMenuOpen] = useState(false);
@@ -738,6 +739,53 @@ function Atendimentos() {
         </div>
       )}
 
+      {reopenConfirmId && (
+        <div
+          className="date-modal-overlay"
+          onClick={() => setReopenConfirmId(null)}
+        >
+          <section
+            className="date-modal"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="date-modal-header">
+              <strong>Reabrir atendimento</strong>
+              <button type="button" onClick={() => setReopenConfirmId(null)}>
+                ×
+              </button>
+            </div>
+
+            <div className="date-modal-body">
+              <p style={{ margin: 0, color: "#4b5563", lineHeight: "1.5" }}>
+                O atendimento voltará para a <strong>fila</strong> e o registro
+                de entrega será removido. Deseja continuar?
+              </p>
+            </div>
+
+            <div className="date-modal-actions">
+              <button
+                type="button"
+                className="date-modal-today"
+                onClick={() => setReopenConfirmId(null)}
+              >
+                Cancelar
+              </button>
+
+              <button
+                type="button"
+                className="date-modal-confirm"
+                onClick={() => {
+                  updateStatus(reopenConfirmId, "na_fila");
+                  setReopenConfirmId(null);
+                }}
+              >
+                Reabrir
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+
       <section className="attendance-container">
         <header className="attendance-header">
           <button
@@ -981,25 +1029,45 @@ function Atendimentos() {
                     )}
 
                     {canChangeStatus && order.status === "em_lavagem" && (
-                      <button
-                        type="button"
-                        className="action-ready"
-                        disabled={updatingId === order.id}
-                        onClick={() => updateStatus(order.id, "pronto")}
-                      >
-                        Marcar pronto
-                      </button>
+                      <>
+                        <button
+                          type="button"
+                          className="action-back-fila"
+                          disabled={updatingId === order.id}
+                          onClick={() => updateStatus(order.id, "na_fila")}
+                        >
+                          Voltar para fila
+                        </button>
+                        <button
+                          type="button"
+                          className="action-ready"
+                          disabled={updatingId === order.id}
+                          onClick={() => updateStatus(order.id, "pronto")}
+                        >
+                          Marcar pronto
+                        </button>
+                      </>
                     )}
 
                     {canChangeStatus && order.status === "pronto" && (
-                      <button
-                        type="button"
-                        className="action-delivered"
-                        disabled={updatingId === order.id}
-                        onClick={() => updateStatus(order.id, "entregue")}
-                      >
-                        Marcar entregue
-                      </button>
+                      <>
+                        <button
+                          type="button"
+                          className="action-back-lavando"
+                          disabled={updatingId === order.id}
+                          onClick={() => updateStatus(order.id, "em_lavagem")}
+                        >
+                          Voltar para lavando
+                        </button>
+                        <button
+                          type="button"
+                          className="action-delivered"
+                          disabled={updatingId === order.id}
+                          onClick={() => updateStatus(order.id, "entregue")}
+                        >
+                          Marcar entregue
+                        </button>
+                      </>
                     )}
 
                     {canEditOrder &&
@@ -1017,9 +1085,21 @@ function Atendimentos() {
                       )}
 
                     {order.status === "entregue" && (
-                      <span className="finished-label">
-                        Atendimento entregue
-                      </span>
+                      <div className="finished-actions">
+                        <span className="finished-label">
+                          Atendimento entregue
+                        </span>
+                        {canChangeStatus && (
+                          <button
+                            type="button"
+                            className="action-reopen"
+                            disabled={updatingId === order.id}
+                            onClick={() => setReopenConfirmId(order.id)}
+                          >
+                            Reabrir
+                          </button>
+                        )}
+                      </div>
                     )}
 
                     {order.status === "cancelado" && (

@@ -112,11 +112,11 @@ async function getCustomerPage(req, res) {
       SELECT
         weekday,
         is_open,
-        TIME_FORMAT(open_time, '%H:%i') AS open_time,
-        TIME_FORMAT(close_time, '%H:%i') AS close_time,
+        TO_CHAR(open_time, 'HH24:MI') AS open_time,
+        TO_CHAR(close_time, 'HH24:MI') AS close_time,
         has_lunch_break,
-        TIME_FORMAT(lunch_start, '%H:%i') AS lunch_start,
-        TIME_FORMAT(lunch_end, '%H:%i') AS lunch_end
+        TO_CHAR(lunch_start, 'HH24:MI') AS lunch_start,
+        TO_CHAR(lunch_end, 'HH24:MI') AS lunch_end
       FROM business_working_hours
       WHERE business_id = ?
       ORDER BY weekday ASC
@@ -411,20 +411,20 @@ async function getPublicMonthAvailability(req, res) {
 
     const [workingHoursRows] = await db.query(
       `SELECT weekday, is_open,
-              TIME_FORMAT(open_time, '%H:%i') AS open_time,
-              TIME_FORMAT(close_time, '%H:%i') AS close_time,
+              TO_CHAR(open_time, 'HH24:MI') AS open_time,
+              TO_CHAR(close_time, 'HH24:MI') AS close_time,
               has_lunch_break,
-              TIME_FORMAT(lunch_start, '%H:%i') AS lunch_start,
-              TIME_FORMAT(lunch_end, '%H:%i') AS lunch_end
+              TO_CHAR(lunch_start, 'HH24:MI') AS lunch_start,
+              TO_CHAR(lunch_end, 'HH24:MI') AS lunch_end
        FROM business_working_hours WHERE business_id = ?`,
       [businessId],
     );
 
     const [blocks] = await db.query(
-      `SELECT DATE_FORMAT(block_date, '%Y-%m-%d') AS block_date, reason
+      `SELECT TO_CHAR(block_date, 'YYYY-MM-DD') AS block_date, reason
        FROM business_schedule_blocks
-       WHERE business_id = ? AND is_full_day = 1
-         AND YEAR(block_date) = ? AND MONTH(block_date) = ?`,
+       WHERE business_id = ? AND is_full_day = true
+         AND EXTRACT(YEAR FROM block_date) = ? AND EXTRACT(MONTH FROM block_date) = ?`,
       [businessId, yearNum, monthNum],
     );
     const blockedDates = new Set(blocks.map((b) => b.block_date));
@@ -434,14 +434,14 @@ async function getPublicMonthAvailability(req, res) {
     }
 
     const [orderRows] = await db.query(
-      `SELECT DATE_FORMAT(scheduled_date, '%Y-%m-%d') AS date,
-              TIME_FORMAT(scheduled_time, '%H:%i') AS scheduled_time,
+      `SELECT TO_CHAR(scheduled_date, 'YYYY-MM-DD') AS date,
+              scheduled_time,
               scheduled_period,
               COUNT(*) AS cnt
        FROM service_orders
        WHERE business_id = ?
-         AND YEAR(scheduled_date) = ?
-         AND MONTH(scheduled_date) = ?
+         AND EXTRACT(YEAR FROM scheduled_date) = ?
+         AND EXTRACT(MONTH FROM scheduled_date) = ?
          AND status NOT IN ('cancelado')
        GROUP BY scheduled_date, scheduled_time, scheduled_period`,
       [businessId, yearNum, monthNum],
@@ -551,11 +551,11 @@ async function getPublicDaySlots(req, res) {
 
     const [workingHoursRows] = await db.query(
       `SELECT is_open,
-              TIME_FORMAT(open_time, '%H:%i') AS open_time,
-              TIME_FORMAT(close_time, '%H:%i') AS close_time,
+              TO_CHAR(open_time, 'HH24:MI') AS open_time,
+              TO_CHAR(close_time, 'HH24:MI') AS close_time,
               has_lunch_break,
-              TIME_FORMAT(lunch_start, '%H:%i') AS lunch_start,
-              TIME_FORMAT(lunch_end, '%H:%i') AS lunch_end
+              TO_CHAR(lunch_start, 'HH24:MI') AS lunch_start,
+              TO_CHAR(lunch_end, 'HH24:MI') AS lunch_end
        FROM business_working_hours WHERE business_id = ? AND weekday = ? LIMIT 1`,
       [businessId, weekday],
     );
@@ -567,7 +567,7 @@ async function getPublicDaySlots(req, res) {
     }
 
     const [orderRows] = await db.query(
-      `SELECT TIME_FORMAT(scheduled_time, '%H:%i') AS scheduled_time,
+      `SELECT scheduled_time,
               scheduled_period,
               COUNT(*) AS cnt
        FROM service_orders
@@ -729,7 +729,7 @@ async function createPublicBooking(req, res) {
       );
     } else {
       const [result] = await connection.query(
-        `INSERT INTO customers (business_id, name, phone) VALUES (?, ?, ?)`,
+        `INSERT INTO customers (business_id, name, phone) VALUES (?, ?, ?) RETURNING id`,
         [businessId, customerName, cleanPhone],
       );
       customerId = result.insertId;
@@ -751,7 +751,7 @@ async function createPublicBooking(req, res) {
     } else {
       const [result] = await connection.query(
         `INSERT INTO vehicles (business_id, customer_id, plate, model, color)
-         VALUES (?, ?, ?, ?, ?)`,
+         VALUES (?, ?, ?, ?, ?) RETURNING id`,
         [businessId, customerId, cleanPlate, vehicleModel || null, vehicleColor || null],
       );
       vehicleId = result.insertId;
@@ -761,7 +761,8 @@ async function createPublicBooking(req, res) {
       `INSERT INTO service_orders
        (business_id, customer_id, vehicle_id, service_id, scheduled_date,
         scheduled_time, scheduled_period, status, price, origin)
-       VALUES (?, ?, ?, ?, ?, ?, ?, 'agendado', ?, 'online')`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'agendado', ?, 'online')
+       RETURNING id`,
       [
         businessId,
         customerId,

@@ -153,7 +153,7 @@ async function createEmployee(req, res) {
           commission_rate = ?
         WHERE id = ?
         `,
-        [businessId, cleanName, cleanPhone, hashedPassword, commission_enabled ? 1 : 0, Number(commission_rate) || 0, existingUser.id],
+        [businessId, cleanName, cleanPhone, hashedPassword, Boolean(commission_enabled), Number(commission_rate) || 0, existingUser.id],
       );
 
       await connection.query(
@@ -169,7 +169,7 @@ async function createEmployee(req, res) {
           `
           SELECT id
           FROM permissions
-          WHERE code IN (?)
+          WHERE code = ANY(?)
           `,
           [normalizedPermissions],
         );
@@ -177,8 +177,9 @@ async function createEmployee(req, res) {
         for (const permission of permissionRows) {
           await connection.query(
             `
-            INSERT IGNORE INTO user_permissions (user_id, permission_id)
+            INSERT INTO user_permissions (user_id, permission_id)
             VALUES (?, ?)
+            ON CONFLICT (user_id, permission_id) DO NOTHING
             `,
             [existingUser.id, permission.id],
           );
@@ -203,8 +204,9 @@ async function createEmployee(req, res) {
       INSERT INTO users
       (business_id, name, email, phone, password, role, status, commission_enabled, commission_rate)
       VALUES (?, ?, ?, ?, ?, 'employee', 'active', ?, ?)
+      RETURNING id
       `,
-      [businessId, cleanName, cleanEmail, cleanPhone, hashedPassword, commission_enabled ? 1 : 0, Number(commission_rate) || 0],
+      [businessId, cleanName, cleanEmail, cleanPhone, hashedPassword, Boolean(commission_enabled), Number(commission_rate) || 0],
     );
 
     const employeeId = result.insertId;
@@ -214,7 +216,7 @@ async function createEmployee(req, res) {
         `
         SELECT id
         FROM permissions
-        WHERE code IN (?)
+        WHERE code = ANY(?)
         `,
         [normalizedPermissions],
       );
@@ -222,8 +224,9 @@ async function createEmployee(req, res) {
       for (const permission of permissionRows) {
         await connection.query(
           `
-          INSERT IGNORE INTO user_permissions (user_id, permission_id)
+          INSERT INTO user_permissions (user_id, permission_id)
           VALUES (?, ?)
+          ON CONFLICT (user_id, permission_id) DO NOTHING
           `,
           [employeeId, permission.id],
         );
@@ -318,7 +321,7 @@ async function updateEmployee(req, res) {
       });
     }
 
-    const commissionEnabled = commission_enabled ? 1 : 0;
+    const commissionEnabled = Boolean(commission_enabled);
     const commissionRate = Number(commission_rate) || 0;
 
     if (password && password.trim()) {
@@ -547,7 +550,7 @@ async function updateEmployeePermissions(req, res) {
         `
         SELECT id, code
         FROM permissions
-        WHERE code IN (?)
+        WHERE code = ANY(?)
         `,
         [normalizedPermissions],
       );
@@ -555,8 +558,9 @@ async function updateEmployeePermissions(req, res) {
       for (const permission of permissionRows) {
         await connection.query(
           `
-          INSERT IGNORE INTO user_permissions (user_id, permission_id)
+          INSERT INTO user_permissions (user_id, permission_id)
           VALUES (?, ?)
+          ON CONFLICT (user_id, permission_id) DO NOTHING
           `,
           [id, permission.id],
         );

@@ -25,7 +25,7 @@ function permissionMiddleware(requiredPermissions) {
         FROM user_permissions up
         INNER JOIN permissions p ON up.permission_id = p.id
         WHERE up.user_id = ?
-        AND p.code IN (?)
+        AND p.code = ANY(?)
         LIMIT 1
         `,
         [user.id, permissionsArray],

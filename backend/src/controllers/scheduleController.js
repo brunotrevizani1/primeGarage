@@ -90,7 +90,7 @@ async function ensureWorkingHours(businessId) {
   for (const day of defaultWeekDays) {
     await db.query(
       `
-      INSERT IGNORE INTO business_working_hours
+      INSERT INTO business_working_hours
       (
         business_id,
         weekday,
@@ -102,6 +102,7 @@ async function ensureWorkingHours(businessId) {
         lunch_end
       )
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT (business_id, weekday) DO NOTHING
       `,
       [
         businessId,
@@ -135,11 +136,11 @@ async function listWorkingHours(req, res) {
         id,
         weekday,
         is_open,
-        TIME_FORMAT(open_time, '%H:%i') AS open_time,
-        TIME_FORMAT(close_time, '%H:%i') AS close_time,
+        TO_CHAR(open_time, 'HH24:MI') AS open_time,
+        TO_CHAR(close_time, 'HH24:MI') AS close_time,
         has_lunch_break,
-        TIME_FORMAT(lunch_start, '%H:%i') AS lunch_start,
-        TIME_FORMAT(lunch_end, '%H:%i') AS lunch_end
+        TO_CHAR(lunch_start, 'HH24:MI') AS lunch_start,
+        TO_CHAR(lunch_end, 'HH24:MI') AS lunch_end
       FROM business_working_hours
       WHERE business_id = ?
       ORDER BY weekday ASC
@@ -269,13 +270,13 @@ async function updateWorkingHours(req, res) {
           lunch_end
         )
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        ON DUPLICATE KEY UPDATE
-          is_open = VALUES(is_open),
-          open_time = VALUES(open_time),
-          close_time = VALUES(close_time),
-          has_lunch_break = VALUES(has_lunch_break),
-          lunch_start = VALUES(lunch_start),
-          lunch_end = VALUES(lunch_end)
+        ON CONFLICT (business_id, weekday) DO UPDATE SET
+          is_open = EXCLUDED.is_open,
+          open_time = EXCLUDED.open_time,
+          close_time = EXCLUDED.close_time,
+          has_lunch_break = EXCLUDED.has_lunch_break,
+          lunch_start = EXCLUDED.lunch_start,
+          lunch_end = EXCLUDED.lunch_end
         `,
         [
           businessId,
@@ -315,15 +316,15 @@ async function listScheduleBlocks(req, res) {
       `
       SELECT
         id,
-        DATE_FORMAT(block_date, '%Y-%m-%d') AS block_date,
+        TO_CHAR(block_date, 'YYYY-MM-DD') AS block_date,
         is_full_day,
-        TIME_FORMAT(start_time, '%H:%i') AS start_time,
-        TIME_FORMAT(end_time, '%H:%i') AS end_time,
+        TO_CHAR(start_time, 'HH24:MI') AS start_time,
+        TO_CHAR(end_time, 'HH24:MI') AS end_time,
         reason,
         created_at
       FROM business_schedule_blocks
       WHERE business_id = ?
-        AND block_date >= CURDATE()
+        AND block_date >= CURRENT_DATE
       ORDER BY block_date ASC, start_time ASC
       `,
       [businessId],
@@ -385,6 +386,7 @@ async function createScheduleBlock(req, res) {
         reason
       )
       VALUES (?, ?, ?, ?, ?, ?)
+      RETURNING id
       `,
       [
         businessId,
@@ -516,14 +518,14 @@ async function updateScheduleSettings(req, res) {
       INSERT INTO business_schedule_settings
       (business_id, schedule_type, slot_interval_minutes, vehicles_per_slot, daily_limit, morning_limit, afternoon_limit, night_limit)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      ON DUPLICATE KEY UPDATE
-        schedule_type = VALUES(schedule_type),
-        slot_interval_minutes = VALUES(slot_interval_minutes),
-        vehicles_per_slot = VALUES(vehicles_per_slot),
-        daily_limit = VALUES(daily_limit),
-        morning_limit = VALUES(morning_limit),
-        afternoon_limit = VALUES(afternoon_limit),
-        night_limit = VALUES(night_limit)
+      ON CONFLICT (business_id) DO UPDATE SET
+        schedule_type = EXCLUDED.schedule_type,
+        slot_interval_minutes = EXCLUDED.slot_interval_minutes,
+        vehicles_per_slot = EXCLUDED.vehicles_per_slot,
+        daily_limit = EXCLUDED.daily_limit,
+        morning_limit = EXCLUDED.morning_limit,
+        afternoon_limit = EXCLUDED.afternoon_limit,
+        night_limit = EXCLUDED.night_limit
       `,
       [
         businessId,

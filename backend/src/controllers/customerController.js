@@ -58,11 +58,11 @@ async function listCustomers(req, res) {
     if (search) {
       searchSql = `
         AND (
-          c.name LIKE ?
-          OR c.phone LIKE ?
-          OR v.plate LIKE ?
-          OR v.model LIKE ?
-          OR v.color LIKE ?
+          c.name ILIKE ?
+          OR c.phone ILIKE ?
+          OR v.plate ILIKE ?
+          OR v.model ILIKE ?
+          OR v.color ILIKE ?
         )
       `;
 
@@ -209,6 +209,7 @@ async function createCustomer(req, res) {
       INSERT INTO customers
       (business_id, name, phone, email)
       VALUES (?, ?, ?, NULL)
+      RETURNING id
       `,
       [businessId, customerName.trim(), cleanPhone],
     );
@@ -220,6 +221,7 @@ async function createCustomer(req, res) {
       INSERT INTO vehicles
       (business_id, customer_id, plate, model, color, notes)
       VALUES (?, ?, ?, ?, ?, NULL)
+      RETURNING id
       `,
       [
         businessId,

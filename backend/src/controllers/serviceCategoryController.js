@@ -74,6 +74,7 @@ async function createCategory(req, res) {
       `
       INSERT INTO service_categories (business_id, name, status)
       VALUES (?, ?, 'active')
+      RETURNING id
       `,
       [businessId, categoryName],
     );

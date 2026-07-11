@@ -34,6 +34,7 @@ async function createBusinessWithOwner(req, res) {
       `
       INSERT INTO businesses (name, phone, address, status)
       VALUES (?, ?, ?, 'active')
+      RETURNING id
       `,
       [businessName, businessPhone || null, businessAddress || null],
     );
@@ -46,6 +47,7 @@ async function createBusinessWithOwner(req, res) {
       `
       INSERT INTO users (business_id, cpf, name, email, password, role, status)
       VALUES (?, ?, ?, ?, ?, 'owner', 'active')
+      RETURNING id
       `,
       [businessId, ownerCpf, ownerName, ownerEmail, hashedPassword],
     );

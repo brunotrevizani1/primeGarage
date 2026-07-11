@@ -19,7 +19,7 @@ async function getPayables(req, res) {
     }
 
     if (description && description.trim()) {
-      conditions.push("p.description LIKE ?");
+      conditions.push("p.description ILIKE ?");
       params.push(`%${description.trim()}%`);
     }
 
@@ -70,7 +70,7 @@ async function createPayable(req, res) {
     if (!due_date) return res.status(400).json({ mensagem: "Data de vencimento é obrigatória." });
 
     const [result] = await db.query(
-      "INSERT INTO payables (business_id, description, amount, due_date) VALUES (?, ?, ?, ?)",
+      "INSERT INTO payables (business_id, description, amount, due_date) VALUES (?, ?, ?, ?) RETURNING id",
       [businessId, description.trim(), Number(amount), due_date],
     );
 
@@ -150,7 +150,7 @@ async function payPayable(req, res) {
     if (payable.status === "pago") return res.status(400).json({ mensagem: "Esta conta já foi paga." });
 
     const [[bank]] = await db.query(
-      "SELECT id FROM banks WHERE id = ? AND business_id = ? AND is_active = 1",
+      "SELECT id FROM banks WHERE id = ? AND business_id = ? AND is_active = true",
       [bank_id, businessId],
     );
 

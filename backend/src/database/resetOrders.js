@@ -1,4 +1,4 @@
-const db = require("../database/connection");
+const db = require("./connection");
 
 async function resetOrders() {
   console.log("Iniciando reset dos atendimentos...");
@@ -7,10 +7,11 @@ async function resetOrders() {
   const [banksResult] = await db.query("UPDATE banks SET balance = 0");
   const [recalcResult] = await db.query(`
     UPDATE banks b
-    INNER JOIN (
+    SET balance = b.balance - py.total
+    FROM (
       SELECT bank_id, SUM(amount) AS total FROM payables WHERE status = 'pago' AND bank_id IS NOT NULL GROUP BY bank_id
-    ) py ON py.bank_id = b.id
-    SET b.balance = b.balance - py.total
+    ) py
+    WHERE py.bank_id = b.id
   `);
   console.log(`Saldos dos bancos recalculados (${banksResult.affectedRows} banco(s) zerado(s), ${recalcResult.affectedRows} ajustado(s) pelo A Pagar).`);
 

@@ -442,6 +442,37 @@
   color: #ffffff;
 }
 
+.action-back-fila {
+  background: linear-gradient(135deg, #facc15, #eab308);
+  color: #14211d;
+}
+
+.action-back-lavando {
+  background: linear-gradient(135deg, #f59e0b, #f97316);
+  color: #ffffff;
+}
+
+.action-reopen {
+  background: #2f5249;
+  color: #ffffff;
+}
+
+.finished-actions {
+  display: flex;
+  gap: 8px;
+  flex: 1 0 100%;
+  align-items: center;
+}
+
+.finished-actions .finished-label {
+  flex: 1;
+}
+
+.finished-actions .action-reopen {
+  flex: 0 0 auto;
+  min-width: 100px;
+}
+
 .finished-label,
 .canceled-label {
   width: 100%;

@@ -67,6 +67,7 @@ async function createOrder(req, res) {
         `
         INSERT INTO customers (business_id, name, phone)
         VALUES (?, ?, ?)
+        RETURNING id
         `,
         [businessId, customerName, customerPhone],
       );
@@ -108,6 +109,7 @@ async function createOrder(req, res) {
         `
         INSERT INTO vehicles (business_id, customer_id, plate, model, color)
         VALUES (?, ?, ?, ?, ?)
+        RETURNING id
         `,
         [
           businessId,
@@ -132,6 +134,7 @@ async function createOrder(req, res) {
       INSERT INTO service_orders
       (business_id, customer_id, vehicle_id, service_id, responsible_user_id, scheduled_date, status, price, notes)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      RETURNING id
       `,
       [
         businessId,
@@ -195,7 +198,7 @@ async function listTodayQueue(req, res) {
       INNER JOIN services s ON so.service_id = s.id
       LEFT JOIN users u ON so.responsible_user_id = u.id
       WHERE so.business_id = ?
-      AND DATE(so.entry_time) = CURDATE()
+      AND DATE(so.entry_time) = CURRENT_DATE
       ORDER BY so.entry_time ASC
       `,
       [businessId],
@@ -265,18 +268,38 @@ async function updateOrderStatus(req, res) {
       });
     }
 
+    const [[currentOrder]] = await db.query(
+      "SELECT status FROM service_orders WHERE id = ? AND business_id = ?",
+      [id, businessId],
+    );
+
+    if (!currentOrder) {
+      return res.status(404).json({
+        mensagem: "Atendimento não encontrado.",
+      });
+    }
+
+    const statusOrder = ["agendado", "na_fila", "em_lavagem", "pronto", "entregue"];
+    const currentIndex = statusOrder.indexOf(currentOrder.status);
+    const newIndex = statusOrder.indexOf(status);
+    const isGoingBack = newIndex < currentIndex && newIndex !== -1 && currentIndex !== -1;
+
     let timeField = "";
 
-    if (status === "em_lavagem") {
-      timeField = ", start_time = NOW()";
-    }
-
-    if (status === "pronto") {
-      timeField = ", finished_time = NOW()";
-    }
-
-    if (status === "entregue") {
-      timeField = ", delivered_time = NOW()";
+    if (!isGoingBack) {
+      if (status === "em_lavagem") {
+        timeField = ", start_time = NOW()";
+      } else if (status === "pronto") {
+        timeField = ", finished_time = NOW()";
+      } else if (status === "entregue") {
+        timeField = ", delivered_time = NOW()";
+      }
+    } else {
+      if (status === "na_fila" || status === "agendado") {
+        timeField = ", start_time = NULL, finished_time = NULL, delivered_time = NULL";
+      } else if (status === "em_lavagem") {
+        timeField = ", finished_time = NULL, delivered_time = NULL";
+      }
     }
 
     const [result] = await db.query(
@@ -294,7 +317,14 @@ async function updateOrderStatus(req, res) {
       });
     }
 
-    if (status === "entregue") {
+    if (isGoingBack && currentOrder.status === "entregue") {
+      await db.query(
+        "DELETE FROM payments WHERE service_order_id = ? AND business_id = ? AND status = 'pendente'",
+        [id, businessId],
+      );
+    }
+
+    if (!isGoingBack && status === "entregue") {
       const [[order]] = await db.query(
         "SELECT price FROM service_orders WHERE id = ? AND business_id = ?",
         [id, businessId],
@@ -561,7 +591,7 @@ async function listOrders(req, res) {
       filters.push("so.scheduled_date BETWEEN ? AND ?");
       values.push(startDate, endDate);
     } else {
-      filters.push("so.scheduled_date = CURDATE()");
+      filters.push("so.scheduled_date = CURRENT_DATE");
     }
 
     if (status && status !== "todos") {
@@ -570,12 +600,12 @@ async function listOrders(req, res) {
     }
 
     if (plate) {
-      filters.push("v.plate LIKE ?");
+      filters.push("v.plate ILIKE ?");
       values.push(`%${plate.toUpperCase()}%`);
     }
 
     if (customer) {
-      filters.push("c.name LIKE ?");
+      filters.push("c.name ILIKE ?");
       values.push(`%${customer}%`);
     }
 

@@ -45,6 +45,7 @@ async function createService(req, res) {
       INSERT INTO services 
       (business_id, category_id, name, description, price, duration_minutes, image_url, status)
       VALUES (?, ?, ?, ?, ?, ?, ?, 'active')
+      RETURNING id
       `,
       [
         businessId,

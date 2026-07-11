@@ -23,7 +23,7 @@ async function createPayment(req, res) {
     }
 
     const [result] = await db.query(
-      "INSERT INTO payments (business_id, service_order_id, amount, payment_method, status) VALUES (?, ?, ?, ?, ?)",
+      "INSERT INTO payments (business_id, service_order_id, amount, payment_method, status) VALUES (?, ?, ?, ?, ?) RETURNING id",
       [businessId, service_order_id, amount, payment_method, status || "pago"],
     );
 
@@ -51,14 +51,14 @@ async function getTodayFinance(req, res) {
         COUNT(*) AS paid_orders,
         COALESCE(AVG(amount), 0) AS average_ticket
       FROM payments
-      WHERE business_id = ? AND status = 'pago' AND DATE(paid_at) = CURDATE()`,
+      WHERE business_id = ? AND status = 'pago' AND DATE(paid_at) = CURRENT_DATE`,
       [businessId],
     );
 
     const [byPaymentMethod] = await db.query(
       `SELECT payment_method, COALESCE(SUM(amount), 0) AS total, COUNT(*) AS quantity
       FROM payments
-      WHERE business_id = ? AND status = 'pago' AND DATE(paid_at) = CURDATE()
+      WHERE business_id = ? AND status = 'pago' AND DATE(paid_at) = CURRENT_DATE
       GROUP BY payment_method`,
       [businessId],
     );
@@ -102,8 +102,8 @@ async function getReceivables(req, res) {
          WHERE p.business_id = ?
            AND p.status = 'pendente'
            AND p.due_date IS NOT NULL
-           AND p.due_date <= CURDATE()
-           AND pm.auto_baixa = 1`,
+           AND p.due_date <= CURRENT_DATE
+           AND pm.auto_baixa = true`,
         [businessId],
       );
 
@@ -137,12 +137,12 @@ async function getReceivables(req, res) {
     }
 
     if (customer_name && customer_name.trim()) {
-      conditions.push("c.name LIKE ?");
+      conditions.push("c.name ILIKE ?");
       params.push(`%${customer_name.trim()}%`);
     }
 
     if (vehicle_plate && vehicle_plate.trim()) {
-      conditions.push("v.plate LIKE ?");
+      conditions.push("v.plate ILIKE ?");
       params.push(`%${vehicle_plate.trim()}%`);
     }
 
@@ -317,7 +317,7 @@ async function receivePayment(req, res) {
     }
 
     const [methods] = await db.query(
-      "SELECT id FROM payment_methods WHERE id = ? AND business_id = ? AND is_active = 1",
+      "SELECT id FROM payment_methods WHERE id = ? AND business_id = ? AND is_active = true",
       [payment_method_id, businessId],
     );
 
@@ -337,7 +337,7 @@ async function receivePayment(req, res) {
     if (N === 1) {
       try {
         await db.query(
-          "UPDATE payments SET status = 'pago', payment_method_id = ?, bank_id = ?, paid_at = NOW(), due_date = CURDATE() WHERE id = ? AND business_id = ?",
+          "UPDATE payments SET status = 'pago', payment_method_id = ?, bank_id = ?, paid_at = NOW(), due_date = CURRENT_DATE WHERE id = ? AND business_id = ?",
           [payment_method_id, bankId, id, businessId],
         );
       } catch {
@@ -473,12 +473,12 @@ async function createPaymentMethod(req, res) {
     let result;
     try {
       [result] = await db.query(
-        "INSERT INTO payment_methods (business_id, name, bank_id, auto_baixa) VALUES (?, ?, ?, ?)",
-        [businessId, name.trim(), bank_id || null, auto_baixa ? 1 : 0],
+        "INSERT INTO payment_methods (business_id, name, bank_id, auto_baixa) VALUES (?, ?, ?, ?) RETURNING id",
+        [businessId, name.trim(), bank_id || null, Boolean(auto_baixa)],
       );
     } catch {
       [result] = await db.query(
-        "INSERT INTO payment_methods (business_id, name, bank_id) VALUES (?, ?, ?)",
+        "INSERT INTO payment_methods (business_id, name, bank_id) VALUES (?, ?, ?) RETURNING id",
         [businessId, name.trim(), bank_id || null],
       );
     }
@@ -500,7 +500,7 @@ async function createPaymentMethod(req, res) {
 
     res.status(201).json({
       mensagem: "Forma de pagamento criada com sucesso.",
-      method: { id: methodId, name: name.trim(), is_active: 1, bank_id: bank_id || null, auto_baixa: Boolean(auto_baixa) },
+      method: { id: methodId, name: name.trim(), is_active: true, bank_id: bank_id || null, auto_baixa: Boolean(auto_baixa) },
     });
   } catch (error) {
     res.status(500).json({ mensagem: "Erro ao criar forma de pagamento.", erro: error.message });
@@ -521,12 +521,12 @@ async function updatePaymentMethod(req, res) {
     try {
       [result] = await db.query(
         "UPDATE payment_methods SET name = ?, bank_id = ?, is_active = ?, auto_baixa = ? WHERE id = ? AND business_id = ?",
-        [name.trim(), bank_id || null, is_active ? 1 : 0, auto_baixa ? 1 : 0, id, businessId],
+        [name.trim(), bank_id || null, Boolean(is_active), Boolean(auto_baixa), id, businessId],
       );
     } catch {
       [result] = await db.query(
         "UPDATE payment_methods SET name = ?, bank_id = ?, is_active = ? WHERE id = ? AND business_id = ?",
-        [name.trim(), bank_id || null, is_active ? 1 : 0, id, businessId],
+        [name.trim(), bank_id || null, Boolean(is_active), id, businessId],
       );
     }
 
