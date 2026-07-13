@@ -576,6 +576,32 @@ async function getPublicDaySlots(req, res) {
       [businessId, date],
     );
 
+    const [blockRows] = await db.query(
+      `SELECT is_full_day,
+              TO_CHAR(start_time, 'HH24:MI') AS start_time,
+              TO_CHAR(end_time, 'HH24:MI') AS end_time
+       FROM business_schedule_blocks
+       WHERE business_id = ? AND block_date = ?`,
+      [businessId, date],
+    );
+
+    const isFullDayBlocked = blockRows.some((block) => block.is_full_day);
+    const partialBlocks = blockRows.filter((block) => !block.is_full_day);
+
+    function isTimeBlocked(time) {
+      if (isFullDayBlocked) return true;
+
+      const slotStart = timeToMinutes(time);
+      const slotEnd = slotStart + settings.slot_interval_minutes;
+
+      return partialBlocks.some((block) => {
+        const blockStart = timeToMinutes(block.start_time);
+        const blockEnd = timeToMinutes(block.end_time);
+        if (blockStart === null || blockEnd === null) return false;
+        return slotStart < blockEnd && slotEnd > blockStart;
+      });
+    }
+
     if (settings.schedule_type === "time_slots") {
       const allSlots = generateTimeSlots(dayConfig, settings.slot_interval_minutes);
       const slots = allSlots.map((time) => {
@@ -584,7 +610,7 @@ async function getPublicDaySlots(req, res) {
           .reduce((s, o) => s + Number(o.cnt), 0);
         return {
           time,
-          available: count < settings.vehicles_per_slot,
+          available: count < settings.vehicles_per_slot && !isTimeBlocked(time),
         };
       });
       return res.json({ type: "time_slots", slots });
@@ -606,21 +632,21 @@ async function getPublicDaySlots(req, res) {
         periods.push({
           period: "morning",
           label: "Manhã",
-          available: morningCount < settings.morning_limit,
+          available: morningCount < settings.morning_limit && !isFullDayBlocked,
         });
       }
       if (settings.afternoon_limit > 0) {
         periods.push({
           period: "afternoon",
           label: "Tarde",
-          available: afternoonCount < settings.afternoon_limit,
+          available: afternoonCount < settings.afternoon_limit && !isFullDayBlocked,
         });
       }
       if (settings.night_limit > 0) {
         periods.push({
           period: "night",
           label: "Noite",
-          available: nightCount < settings.night_limit,
+          available: nightCount < settings.night_limit && !isFullDayBlocked,
         });
       }
 
@@ -630,7 +656,7 @@ async function getPublicDaySlots(req, res) {
     const totalCount = orderRows.reduce((s, o) => s + Number(o.cnt), 0);
     return res.json({
       type: "daily",
-      available: totalCount < settings.daily_limit,
+      available: totalCount < settings.daily_limit && !isFullDayBlocked,
     });
   } catch (error) {
     return res.status(500).json({

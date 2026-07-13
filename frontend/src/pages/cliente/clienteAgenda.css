@@ -691,3 +691,31 @@
     border-radius: 12px;
   }
 }
+
+/* DESKTOP */
+@media (min-width: 640px) {
+  .ca-app {
+    max-width: 600px;
+  }
+
+  .ca-hero {
+    padding: 54px 32px 28px;
+  }
+
+  .ca-logo {
+    width: 120px;
+    height: 120px;
+  }
+
+  .ca-hero h1 {
+    font-size: 2.3rem;
+  }
+
+  .ca-time-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .ca-block-modal {
+    max-width: 480px;
+  }
+}

@@ -31,6 +31,13 @@ function EditarAtendimento() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+
+  const [basePrice, setBasePrice] = useState(0);
+  const [discountAmount, setDiscountAmount] = useState(0);
+  const [discountInput, setDiscountInput] = useState("");
+  const [applyingDiscount, setApplyingDiscount] = useState(false);
+  const [discountMessage, setDiscountMessage] = useState("");
+  const [discountError, setDiscountError] = useState("");
   const [userPermissions, setUserPermissions] = useState(getSavedPermissions());
   const [userRole, setUserRole] = useState(getSavedRole());
 
@@ -132,6 +139,13 @@ function EditarAtendimento() {
       .slice(0, 7);
   }
 
+  function formatMoney(value) {
+    return Number(value || 0).toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    });
+  }
+
   function handleNameChange(value) {
     updateField("customerName", capitalizeName(onlyLetters(value)));
   }
@@ -223,6 +237,13 @@ function EditarAtendimento() {
       setEmployees(employeesResponse.employees || []);
       setHasPayment(Boolean(order.has_payment));
       setStatus(order.status);
+
+      const currentDiscount = Number(order.discount_amount) || 0;
+      const currentPrice = Number(order.price) || 0;
+
+      setDiscountAmount(currentDiscount);
+      setBasePrice(currentPrice + currentDiscount);
+      setDiscountInput(currentDiscount ? String(currentDiscount) : "");
 
       setForm({
         customerName: order.customer_name || "",
@@ -326,6 +347,40 @@ function EditarAtendimento() {
     }
   }
 
+  async function handleApplyDiscount() {
+    const discountValue = Number(discountInput.replace(",", ".")) || 0;
+
+    setDiscountError("");
+    setDiscountMessage("");
+
+    if (discountValue < 0) {
+      setDiscountError("Informe um valor de desconto válido.");
+      return;
+    }
+
+    if (discountValue > basePrice) {
+      setDiscountError("O desconto não pode ser maior que o valor do atendimento.");
+      return;
+    }
+
+    try {
+      setApplyingDiscount(true);
+
+      const response = await apiRequest(`/api/orders/${orderId}/discount`, {
+        method: "PATCH",
+        body: JSON.stringify({ discount: discountValue }),
+      });
+
+      setDiscountAmount(response.discount_amount);
+      updateField("price", response.price);
+      setDiscountMessage("Desconto aplicado com sucesso.");
+    } catch (error) {
+      setDiscountError(error.message);
+    } finally {
+      setApplyingDiscount(false);
+    }
+  }
+
   useEffect(() => {
     async function checkPermissionAndLoad() {
       try {
@@ -402,6 +457,46 @@ function EditarAtendimento() {
             ser alterado.
           </div>
         )}
+
+        <div className="form-section discount-section">
+          <h2>Desconto</h2>
+
+          {discountError && <div className="edit-order-error">{discountError}</div>}
+          {discountMessage && <div className="discount-success">{discountMessage}</div>}
+
+          {hasPayment ? (
+            <p className="field-message">
+              Este atendimento já foi pago e não pode mais receber desconto.
+            </p>
+          ) : (
+            <>
+              <p className="field-message">
+                Valor original: {formatMoney(basePrice)} · Valor final: {formatMoney(basePrice - discountAmount)}
+              </p>
+
+              <div className="form-grid">
+                <div className="form-group">
+                  <label>Desconto (R$)</label>
+                  <input
+                    type="text"
+                    placeholder="0,00"
+                    value={discountInput}
+                    onChange={(event) => setDiscountInput(event.target.value)}
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  className="apply-discount-button"
+                  onClick={handleApplyDiscount}
+                  disabled={applyingDiscount}
+                >
+                  {applyingDiscount ? "Aplicando..." : "Aplicar desconto"}
+                </button>
+              </div>
+            </>
+          )}
+        </div>
 
         <form className="edit-order-form" onSubmit={handleSubmit}>
           <div className="form-section">

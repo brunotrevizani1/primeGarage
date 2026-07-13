@@ -1,5 +1,5 @@
 const express = require("express");
-const { createBusinessWithOwner } = require("../controllers/adminController");
+const { createBusinessWithOwner, listBusinesses } = require("../controllers/adminController");
 const authMiddleware = require("../middlewares/authMiddleware");
 
 const router = express.Router();
@@ -13,6 +13,8 @@ function onlySuperAdmin(req, res, next) {
 
   next();
 }
+
+router.get("/businesses", authMiddleware, onlySuperAdmin, listBusinesses);
 
 router.post(
   "/businesses",

@@ -92,6 +92,42 @@ async function createBusinessWithOwner(req, res) {
   }
 }
 
+async function listBusinesses(req, res) {
+  try {
+    const [rows] = await db.query(`
+      SELECT
+        b.id, b.name, b.phone, b.address, b.status, b.created_at,
+        u.id AS owner_id, u.name AS owner_name, u.email AS owner_email, u.status AS owner_status
+      FROM businesses b
+      LEFT JOIN users u ON u.business_id = b.id AND u.role = 'owner'
+      ORDER BY b.created_at DESC
+    `);
+
+    const businesses = rows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      phone: row.phone,
+      address: row.address,
+      status: row.status,
+      created_at: row.created_at,
+      owner: row.owner_id
+        ? { id: row.owner_id, name: row.owner_name, email: row.owner_email, status: row.owner_status }
+        : null,
+    }));
+
+    res.json({
+      mensagem: "Lavajatos listados com sucesso.",
+      businesses,
+    });
+  } catch (error) {
+    res.status(500).json({
+      mensagem: "Erro ao listar lavajatos.",
+      erro: error.message,
+    });
+  }
+}
+
 module.exports = {
   createBusinessWithOwner,
+  listBusinesses,
 };

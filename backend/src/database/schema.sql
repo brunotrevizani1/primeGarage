@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS businesses (
   status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'inactive')),
   customer_page_name VARCHAR(150),
   customer_page_phrase VARCHAR(255),
-  customer_page_logo_url VARCHAR(255),
+  customer_page_logo_url TEXT,
   address_street VARCHAR(150),
   address_number VARCHAR(20),
   address_neighborhood VARCHAR(100),
@@ -109,6 +109,7 @@ CREATE TABLE IF NOT EXISTS service_orders (
   status VARCHAR(20) NOT NULL DEFAULT 'na_fila' CHECK (status IN
     ('agendado', 'na_fila', 'em_lavagem', 'em_acabamento', 'pronto', 'entregue', 'cancelado')),
   price DECIMAL(10,2) NOT NULL,
+  discount_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
   payment_method VARCHAR(20) CHECK (payment_method IN ('dinheiro', 'pix', 'cartao', 'fiado', 'cortesia')),
   notes TEXT,
   entry_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

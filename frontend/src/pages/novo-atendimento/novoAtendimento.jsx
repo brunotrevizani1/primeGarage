@@ -52,6 +52,7 @@ function NovoAtendimento() {
     categoryId: "",
     serviceId: "",
     price: "",
+    discount: "",
     scheduledDate: new Date().toISOString().slice(0, 10),
     responsibleUserId: "",
     notes: "",
@@ -222,6 +223,7 @@ function NovoAtendimento() {
       categoryId,
       serviceId: "",
       price: "",
+      discount: "",
     }));
   }
 
@@ -238,6 +240,7 @@ function NovoAtendimento() {
             String(Math.round(Number(selectedService.price || 0) * 100)),
           )
         : "",
+      discount: "",
     }));
   }
 
@@ -277,6 +280,10 @@ function NovoAtendimento() {
     }
 
     if (missingFields.length === 0) {
+      if (currencyToNumber(form.discount) > currencyToNumber(form.price)) {
+        return "O desconto não pode ser maior que o preço do atendimento.";
+      }
+
       return "";
     }
 
@@ -325,6 +332,7 @@ function NovoAtendimento() {
             ? Number(form.responsibleUserId)
             : null,
           price: currencyToNumber(form.price),
+          discount: currencyToNumber(form.discount),
           notes: form.notes,
         }),
       });
@@ -528,6 +536,21 @@ function NovoAtendimento() {
                   onChange={(event) =>
                     updateField(
                       "price",
+                      formatCurrencyInput(event.target.value),
+                    )
+                  }
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Desconto (opcional)</label>
+                <input
+                  type="text"
+                  placeholder="R$ 0,00"
+                  value={form.discount}
+                  onChange={(event) =>
+                    updateField(
+                      "discount",
                       formatCurrencyInput(event.target.value),
                     )
                   }

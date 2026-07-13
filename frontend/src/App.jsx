@@ -22,6 +22,7 @@ import APagar from "./pages/financeiro/aPagar";
 import FormasPagamento from "./pages/financeiro/formasPagamento";
 import Banco from "./pages/financeiro/banco";
 import Relatorios from "./pages/relatorios/Relatorios";
+import Admin from "./pages/admin/admin";
 
 function App() {
   const path = window.location.pathname;
@@ -29,14 +30,16 @@ function App() {
 
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userRole, setUserRole] = useState("");
 
   const isPublicCustomerRoute = pathParts[0] === "agendar" && pathParts[1];
 
   useEffect(() => {
     async function checkAuth() {
       try {
-        await apiRequest("/api/auth/me");
+        const response = await apiRequest("/api/auth/me");
         setIsAuthenticated(true);
+        setUserRole(response.user?.role || "");
       } catch {
         setIsAuthenticated(false);
       } finally {
@@ -84,6 +87,17 @@ function App() {
     return null;
   }
 
+  if (isAuthenticated && userRole === "super_admin" && path !== "/admin") {
+    window.location.href = "/admin";
+    return null;
+  }
+
+  if (isAuthenticated && userRole !== "super_admin" && path === "/admin") {
+    window.location.href = "/dashboard";
+    return null;
+  }
+
+  if (path === "/admin") return <Admin />;
   if (path === "/dashboard") return <Dashboard />;
   if (path === "/atendimentos") return <Atendimentos />;
   if (path === "/novo-atendimento") return <NovoAtendimento />;

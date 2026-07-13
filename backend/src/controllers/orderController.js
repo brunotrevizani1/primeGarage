@@ -16,6 +16,7 @@ async function createOrder(req, res) {
       responsibleUserId,
       scheduledDate,
       price,
+      discount,
       notes,
     } = req.body;
 
@@ -36,6 +37,16 @@ async function createOrder(req, res) {
         mensagem: "Nome, telefone, placa, serviço e preço são obrigatórios.",
       });
     }
+
+    const discountAmount = Number(discount) || 0;
+
+    if (discountAmount < 0 || discountAmount > Number(price)) {
+      return res.status(400).json({
+        mensagem: "O desconto não pode ser maior que o preço do atendimento.",
+      });
+    }
+
+    const finalPrice = Number(price) - discountAmount;
 
     await connection.beginTransaction();
 
@@ -132,8 +143,8 @@ async function createOrder(req, res) {
       `
       
       INSERT INTO service_orders
-      (business_id, customer_id, vehicle_id, service_id, responsible_user_id, scheduled_date, status, price, notes)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (business_id, customer_id, vehicle_id, service_id, responsible_user_id, scheduled_date, status, price, discount_amount, notes)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       RETURNING id
       `,
       [
@@ -144,7 +155,8 @@ async function createOrder(req, res) {
         responsibleUserId || null,
         orderDate,
         initialStatus,
-        price,
+        finalPrice,
+        discountAmount,
         notes || null,
       ],
     );
@@ -523,6 +535,7 @@ async function getOrderById(req, res) {
         so.id,
         so.status,
         so.price,
+        so.discount_amount,
         so.notes,
         so.service_id,
         so.responsible_user_id,
@@ -569,11 +582,73 @@ async function getOrderById(req, res) {
   }
 }
 
+async function applyDiscount(req, res) {
+  try {
+    const businessId = req.user.business_id;
+    const { id } = req.params;
+    const discountAmount = Number(req.body.discount);
+
+    if (Number.isNaN(discountAmount) || discountAmount < 0) {
+      return res.status(400).json({
+        mensagem: "Informe um valor de desconto válido.",
+      });
+    }
+
+    const [orders] = await db.query(
+      "SELECT price, discount_amount FROM service_orders WHERE id = ? AND business_id = ?",
+      [id, businessId],
+    );
+
+    if (orders.length === 0) {
+      return res.status(404).json({
+        mensagem: "Atendimento não encontrado.",
+      });
+    }
+
+    const [paidPayments] = await db.query(
+      "SELECT id FROM payments WHERE service_order_id = ? AND business_id = ? AND status = 'pago' LIMIT 1",
+      [id, businessId],
+    );
+
+    if (paidPayments.length > 0) {
+      return res.status(400).json({
+        mensagem: "Este atendimento já foi pago e não pode receber desconto.",
+      });
+    }
+
+    const basePrice = Number(orders[0].price) + Number(orders[0].discount_amount);
+
+    if (discountAmount > basePrice) {
+      return res.status(400).json({
+        mensagem: "O desconto não pode ser maior que o valor do atendimento.",
+      });
+    }
+
+    const newPrice = basePrice - discountAmount;
+
+    await db.query(
+      "UPDATE service_orders SET price = ?, discount_amount = ? WHERE id = ? AND business_id = ?",
+      [newPrice, discountAmount, id, businessId],
+    );
+
+    res.json({
+      mensagem: "Desconto aplicado com sucesso.",
+      price: newPrice,
+      discount_amount: discountAmount,
+    });
+  } catch (error) {
+    res.status(500).json({
+      mensagem: "Erro ao aplicar desconto.",
+      erro: error.message,
+    });
+  }
+}
+
 async function listOrders(req, res) {
   try {
     const businessId = req.user.business_id;
 
-    const { date, startDate, endDate, status, plate, customer } = req.query;
+    const { date, startDate, endDate, status, plate, customer, categoryId, serviceId } = req.query;
 
     if (!businessId) {
       return res.status(400).json({
@@ -609,9 +684,17 @@ async function listOrders(req, res) {
       values.push(`%${customer}%`);
     }
 
+    if (serviceId) {
+      filters.push("s.id = ?");
+      values.push(Number(serviceId));
+    } else if (categoryId) {
+      filters.push("s.category_id = ?");
+      values.push(Number(categoryId));
+    }
+
     const [orders] = await db.query(
       `
-      SELECT 
+      SELECT
         so.id,
         so.status,
         so.price,
@@ -624,6 +707,7 @@ async function listOrders(req, res) {
         v.model AS vehicle_model,
         v.color AS vehicle_color,
         s.name AS service_name,
+        s.category_id,
         u.name AS responsible_name
       FROM service_orders so
       INNER JOIN customers c ON so.customer_id = c.id
@@ -664,5 +748,6 @@ module.exports = {
   updateOrderStatus,
   updateOrder,
   getOrderById,
+  applyDiscount,
   listOrders,
 };

@@ -742,6 +742,10 @@ function FinancialTab({
           </div>
           <div className="rel-cards">
             <div className="rel-card">
+              <div className="rel-card-label">Atendimentos</div>
+              <div className="rel-card-value blue">{rec.total_count}</div>
+            </div>
+            <div className="rel-card">
               <div className="rel-card-label">Total gerado</div>
               <div className="rel-card-value">
                 {BRL.format(rec.total_amount)}
@@ -758,10 +762,6 @@ function FinancialTab({
               <div className="rel-card-value yellow">
                 {BRL.format(rec.pending_amount)}
               </div>
-            </div>
-            <div className="rel-card">
-              <div className="rel-card-label">Atendimentos</div>
-              <div className="rel-card-value blue">{rec.total_count}</div>
             </div>
           </div>
 
@@ -1205,7 +1205,7 @@ function EmployeeList({ team }) {
             <div className="rel-customer-stats">
               <span className="rel-customer-stat">
                 <span className="rel-customer-stat-value">{emp.total_orders}</span>
-                <span className="rel-customer-stat-label">OS</span>
+                <span className="rel-customer-stat-label">Atend</span>
               </span>
               <span className="rel-customer-stat">
                 <span className="rel-customer-stat-value">{BRL.format(emp.total_value)}</span>

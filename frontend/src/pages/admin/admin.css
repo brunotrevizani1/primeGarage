@@ -1,0 +1,332 @@
+.admin-page {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #f4f6f5 0%, #edf1ee 100%);
+  padding: 18px;
+}
+
+.admin-container {
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  padding-bottom: 40px;
+}
+
+.admin-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.admin-header-text h1 {
+  color: #14211d;
+  font-size: 1.45rem;
+  line-height: 1.05;
+  letter-spacing: -0.05em;
+  margin-bottom: 4px;
+}
+
+.admin-header-text p {
+  color: #6f7e78;
+  font-size: 0.84rem;
+}
+
+.admin-error {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  padding: 12px;
+  border-radius: 16px;
+  margin-bottom: 14px;
+  font-size: 0.9rem;
+}
+
+.admin-new-button {
+  width: 100%;
+  height: 52px;
+  border: none;
+  border-radius: 16px;
+  background: #2f5249;
+  color: #ffffff;
+  font-size: 0.95rem;
+  font-weight: 900;
+  cursor: pointer;
+  margin-bottom: 18px;
+  box-shadow: 0 12px 24px rgba(47, 82, 73, 0.22);
+}
+
+.admin-loading,
+.admin-empty {
+  color: #6f7e78;
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 24px 0;
+}
+
+.admin-business-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.admin-business-card {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 16px;
+  box-shadow: 0 10px 24px rgba(20, 33, 29, 0.08);
+}
+
+.admin-business-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.admin-business-card-top strong {
+  color: #14211d;
+  font-size: 1.02rem;
+  letter-spacing: -0.03em;
+}
+
+.admin-badge {
+  font-size: 0.72rem;
+  font-weight: 900;
+  padding: 4px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.admin-badge-active {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.admin-badge-inactive {
+  background: #f1f4f2;
+  color: #64716d;
+}
+
+.admin-business-detail {
+  color: #6f7e78;
+  font-size: 0.84rem;
+  margin-bottom: 2px;
+}
+
+.admin-business-owner {
+  display: flex;
+  flex-direction: column;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed #e8eeeb;
+}
+
+.admin-owner-name {
+  color: #334155;
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+
+.admin-owner-email {
+  color: #6f7e78;
+  font-size: 0.8rem;
+}
+
+.admin-owner-missing {
+  color: #b91c1c;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.admin-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(20, 33, 29, 0.42);
+}
+
+.admin-modal {
+  width: calc(100% - 32px);
+  max-width: 480px;
+  max-height: calc(100vh - 36px);
+  overflow-y: auto;
+  background: #ffffff;
+  border-radius: 28px;
+  padding: 18px;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.22);
+  position: fixed;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  animation: adminModalUp 0.2s ease;
+}
+
+@keyframes adminModalUp {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 16px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.admin-modal,
+.admin-modal * {
+  box-sizing: border-box;
+}
+
+.modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.modal-header strong {
+  color: #14211d;
+  font-size: 1.2rem;
+}
+
+.modal-header p {
+  color: #64716d;
+  font-size: 0.86rem;
+  margin-top: 4px;
+}
+
+.modal-header button {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  border: none;
+  border-radius: 12px;
+  background: #f1f4f2;
+  color: #14211d;
+  font-size: 1.4rem;
+  cursor: pointer;
+}
+
+.admin-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.form-group label {
+  color: #334155;
+  font-size: 0.84rem;
+  font-weight: 900;
+}
+
+.form-group input {
+  width: 100%;
+  height: 50px;
+  border: 1px solid #dbe3ea;
+  border-radius: 15px;
+  background: #f8fafc;
+  padding: 0 12px;
+  color: #14211d;
+  font-size: 0.92rem;
+  outline: none;
+}
+
+.form-group input:focus {
+  border-color: #2f5249;
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(47, 82, 73, 0.1);
+}
+
+.admin-show-password {
+  align-self: flex-start;
+  border: none;
+  background: none;
+  color: #2f5249;
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+  padding: 0;
+}
+
+.permissions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.permission-group {
+  background: #f7faf8;
+  border-radius: 18px;
+  padding: 14px;
+}
+
+.permission-group h3 {
+  color: #14211d;
+  font-size: 1rem;
+  margin-bottom: 10px;
+  letter-spacing: -0.03em;
+}
+
+.permission-options {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.permission-option {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 11px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #334155;
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+
+.permission-option input {
+  width: 18px;
+  height: 18px;
+  accent-color: #2f5249;
+}
+
+.modal-actions {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 10px;
+}
+
+.modal-actions button {
+  height: 50px;
+  border: none;
+  border-radius: 16px;
+  font-size: 0.92rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.modal-actions button[type="button"] {
+  background: #f1f4f2;
+  color: #14211d;
+}
+
+.admin-submit-button {
+  background: #2f5249;
+  color: #ffffff;
+}
+
+.admin-submit-button:disabled,
+.modal-actions button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

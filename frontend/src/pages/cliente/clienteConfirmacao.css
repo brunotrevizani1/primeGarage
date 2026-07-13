@@ -346,3 +346,27 @@
   .cc-hero h1 { font-size: 1.58rem; }
   .cc-card { border-radius: 24px; padding: 17px; }
 }
+
+/* DESKTOP */
+@media (min-width: 640px) {
+  .cc-app {
+    max-width: 560px;
+  }
+
+  .cc-hero {
+    padding: 54px 32px 30px;
+  }
+
+  .cc-logo {
+    width: 96px;
+    height: 96px;
+  }
+
+  .cc-hero h1 {
+    font-size: 2rem;
+  }
+
+  .cc-card {
+    padding: 26px;
+  }
+}

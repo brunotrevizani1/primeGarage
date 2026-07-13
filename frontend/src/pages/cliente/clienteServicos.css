@@ -374,3 +374,41 @@
     font-size: 0.72rem;
   }
 }
+
+/* DESKTOP */
+@media (min-width: 640px) {
+  .customer-services-app {
+    max-width: 680px;
+  }
+
+  .customer-services-hero {
+    padding: 60px 32px 30px;
+  }
+
+  .customer-services-logo {
+    width: 128px;
+    height: 128px;
+  }
+
+  .customer-services-hero h1 {
+    font-size: 2.3rem;
+  }
+
+  .customer-services-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    align-items: start;
+    align-content: start;
+    gap: 14px;
+  }
+}
+
+@media (min-width: 960px) {
+  .customer-services-app {
+    max-width: 880px;
+  }
+
+  .customer-services-list {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}

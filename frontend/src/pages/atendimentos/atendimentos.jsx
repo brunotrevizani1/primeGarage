@@ -1,6 +1,6 @@
 import MenuIcon from "../../components/MenuIcon";
 import AccountMenu from "../../components/AccountMenu";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { apiRequest } from "../../services/api";
 import {
   getSavedPermissions,
@@ -59,7 +59,18 @@ function Atendimentos() {
     status: "",
     plate: "",
     customer: "",
+    categoryId: "",
+    serviceId: "",
   });
+
+  const [categories, setCategories] = useState([]);
+  const [services, setServices] = useState([]);
+
+  const filteredServices = filters.categoryId
+    ? services.filter(
+        (service) => String(service.category_id) === String(filters.categoryId),
+      )
+    : [];
 
   const canViewDashboard = hasPermission("ver_dashboard", userPermissions);
   const canViewQueue = hasPermission("ver_fila", userPermissions);
@@ -162,6 +173,14 @@ function Atendimentos() {
     }));
   }
 
+  function updateCategoryFilter(value) {
+    setFilters((currentFilters) => ({
+      ...currentFilters,
+      categoryId: value,
+      serviceId: "",
+    }));
+  }
+
   function buildFilterQuery() {
     const params = new URLSearchParams();
 
@@ -179,11 +198,25 @@ function Atendimentos() {
       params.append("customer", filters.customer);
     }
 
+    if (filters.categoryId) {
+      params.append("categoryId", filters.categoryId);
+    }
+
+    if (filters.serviceId) {
+      params.append("serviceId", filters.serviceId);
+    }
+
     return `/api/orders?${params.toString()}`;
   }
 
   function hasActiveFilters() {
-    return filters.status || filters.plate || filters.customer;
+    return (
+      filters.status ||
+      filters.plate ||
+      filters.customer ||
+      filters.categoryId ||
+      filters.serviceId
+    );
   }
 
   async function applyFilters() {
@@ -211,6 +244,8 @@ function Atendimentos() {
       status: "",
       plate: "",
       customer: "",
+      categoryId: "",
+      serviceId: "",
     });
 
     try {
@@ -311,13 +346,36 @@ function Atendimentos() {
   }, []);
 
   useEffect(() => {
+    async function loadFilterOptions() {
+      try {
+        const [categoriesResponse, servicesResponse] = await Promise.all([
+          apiRequest("/api/service-categories"),
+          apiRequest("/api/services"),
+        ]);
+
+        setCategories(categoriesResponse.categories || []);
+        setServices(servicesResponse.services || []);
+      } catch {
+        setCategories([]);
+        setServices([]);
+      }
+    }
+
+    loadFilterOptions();
+  }, []);
+
+  const loadOrdersRef = useRef(loadOrders);
+  loadOrdersRef.current = loadOrders;
+
+  useEffect(() => {
     loadOrders();
 
     const id = setInterval(() => {
-      if (!document.hidden) loadOrders(false);
+      if (!document.hidden) loadOrdersRef.current(false);
     }, 30000);
 
     return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate]);
 
   if (loading) {
@@ -715,6 +773,41 @@ function Atendimentos() {
                     updateFilter("customer", event.target.value)
                   }
                 />
+              </div>
+
+              <div className="filter-group">
+                <label>Categoria</label>
+                <select
+                  value={filters.categoryId}
+                  onChange={(event) => updateCategoryFilter(event.target.value)}
+                >
+                  <option value="">Todas</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="filter-group">
+                <label>Serviço</label>
+                <select
+                  value={filters.serviceId}
+                  onChange={(event) =>
+                    updateFilter("serviceId", event.target.value)
+                  }
+                  disabled={!filters.categoryId}
+                >
+                  <option value="">
+                    {filters.categoryId ? "Todos" : "Escolha categoria"}
+                  </option>
+                  {filteredServices.map((service) => (
+                    <option key={service.id} value={service.id}>
+                      {service.name}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 

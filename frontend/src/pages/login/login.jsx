@@ -15,12 +15,12 @@ function Login() {
     setError("");
     setLoading(true);
     try {
-      const data = await apiRequest("/api/auth/login", {
+      await apiRequest("/api/auth/login", {
         method: "POST",
         body: JSON.stringify({ email, password }),
       });
-      await loadUserPermissions();
-      window.location.href = "/dashboard";
+      const { role } = await loadUserPermissions();
+      window.location.href = role === "super_admin" ? "/admin" : "/dashboard";
     } catch (error) {
       setError(error.message);
     } finally {

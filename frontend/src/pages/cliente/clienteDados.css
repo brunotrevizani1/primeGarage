@@ -444,3 +444,31 @@
     height: 43px;
   }
 }
+
+/* DESKTOP */
+@media (min-width: 640px) {
+  .customer-data-app {
+    max-width: 600px;
+  }
+
+  .customer-data-hero {
+    padding: 54px 32px 28px;
+  }
+
+  .customer-data-logo {
+    width: 120px;
+    height: 120px;
+  }
+
+  .customer-data-hero h1 {
+    font-size: 2.3rem;
+  }
+
+  .customer-data-hero p {
+    max-width: 380px;
+  }
+
+  .customer-data-card {
+    padding: 22px;
+  }
+}

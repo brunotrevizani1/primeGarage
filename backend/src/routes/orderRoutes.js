@@ -5,6 +5,7 @@ const {
   updateOrderStatus,
   updateOrder,
   getOrderById,
+  applyDiscount,
   listOrders,
 } = require("../controllers/orderController");
 
@@ -54,6 +55,13 @@ router.put(
   authMiddleware,
   permissionMiddleware("editar_atendimento"),
   updateOrder,
+);
+
+router.patch(
+  "/:id/discount",
+  authMiddleware,
+  permissionMiddleware("editar_atendimento"),
+  applyDiscount,
 );
 
 module.exports = router;

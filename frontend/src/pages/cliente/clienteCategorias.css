@@ -309,3 +309,41 @@
     font-size: 1.08rem;
   }
 }
+
+/* DESKTOP */
+@media (min-width: 640px) {
+  .customer-category-app {
+    max-width: 680px;
+  }
+
+  .customer-category-hero {
+    padding: 54px 32px 28px;
+  }
+
+  .customer-category-logo-large {
+    width: 100px;
+    height: 100px;
+  }
+
+  .customer-category-hero h1 {
+    font-size: 2.1rem;
+  }
+
+  .customer-category-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    align-items: start;
+    align-content: start;
+    gap: 12px;
+  }
+}
+
+@media (min-width: 960px) {
+  .customer-category-app {
+    max-width: 880px;
+  }
+
+  .customer-category-list {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
