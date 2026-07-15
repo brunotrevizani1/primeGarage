@@ -1,12 +1,12 @@
 .admin-page {
   min-height: 100vh;
   background: linear-gradient(180deg, #f4f6f5 0%, #edf1ee 100%);
-  padding: 18px;
+  padding: 32px;
 }
 
 .admin-container {
   width: 100%;
-  max-width: 560px;
+  max-width: 1080px;
   margin: 0 auto;
   padding-bottom: 40px;
 }
@@ -21,7 +21,7 @@
 
 .admin-header-text h1 {
   color: #14211d;
-  font-size: 1.45rem;
+  font-size: 1.9rem;
   line-height: 1.05;
   letter-spacing: -0.05em;
   margin-bottom: 4px;
@@ -43,8 +43,9 @@
 }
 
 .admin-new-button {
-  width: 100%;
-  height: 52px;
+  width: auto;
+  height: 48px;
+  padding: 0 26px;
   border: none;
   border-radius: 16px;
   background: #2f5249;
@@ -52,8 +53,12 @@
   font-size: 0.95rem;
   font-weight: 900;
   cursor: pointer;
-  margin-bottom: 18px;
+  margin-bottom: 22px;
   box-shadow: 0 12px 24px rgba(47, 82, 73, 0.22);
+}
+
+.admin-new-button:hover {
+  background: #26433c;
 }
 
 .admin-loading,
@@ -65,15 +70,17 @@
 }
 
 .admin-business-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
 }
 
 .admin-business-card {
+  display: flex;
+  flex-direction: column;
   background: #ffffff;
   border-radius: 20px;
-  padding: 16px;
+  padding: 18px;
   box-shadow: 0 10px 24px rgba(20, 33, 29, 0.08);
 }
 
@@ -140,37 +147,54 @@
   font-weight: 700;
 }
 
+.admin-edit-button {
+  width: 100%;
+  height: 42px;
+  margin-top: 14px;
+  border: 1px solid #dbe3ea;
+  border-radius: 14px;
+  background: #f8fafc;
+  color: #2f5249;
+  font-size: 0.86rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.admin-edit-button:hover {
+  background: #eef2f0;
+}
+
 .admin-modal-overlay {
   position: fixed;
   inset: 0;
   z-index: 40;
   background: rgba(20, 33, 29, 0.42);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
 }
 
 .admin-modal {
-  width: calc(100% - 32px);
-  max-width: 480px;
-  max-height: calc(100vh - 36px);
+  width: 100%;
+  max-width: 720px;
+  max-height: calc(100vh - 64px);
   overflow-y: auto;
   background: #ffffff;
-  border-radius: 28px;
-  padding: 18px;
+  border-radius: 24px;
+  padding: 28px;
   box-shadow: 0 24px 70px rgba(15, 23, 42, 0.22);
-  position: fixed;
-  left: 50%;
-  bottom: 18px;
-  transform: translateX(-50%);
-  animation: adminModalUp 0.2s ease;
+  animation: adminModalIn 0.16s ease;
 }
 
-@keyframes adminModalUp {
+@keyframes adminModalIn {
   from {
     opacity: 0;
-    transform: translate(-50%, 16px);
+    transform: translateY(10px) scale(0.98);
   }
   to {
     opacity: 1;
-    transform: translate(-50%, 0);
+    transform: translateY(0) scale(1);
   }
 }
 
@@ -211,9 +235,32 @@
 }
 
 .admin-form {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 18px;
+}
+
+.admin-error,
+.admin-section-title,
+.permissions-list,
+.admin-owner-missing,
+.modal-actions {
+  grid-column: 1 / -1;
+}
+
+.admin-section-title {
+  color: #14211d;
+  font-size: 0.92rem;
+  letter-spacing: -0.02em;
+  margin-top: 6px;
+  padding-top: 12px;
+  border-top: 1px dashed #e8eeeb;
+}
+
+.admin-section-title:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
 }
 
 .form-group {
@@ -246,15 +293,58 @@
   box-shadow: 0 0 0 4px rgba(47, 82, 73, 0.1);
 }
 
-.admin-show-password {
-  align-self: flex-start;
+.form-group select {
+  width: 100%;
+  height: 50px;
+  border: 1px solid #dbe3ea;
+  border-radius: 15px;
+  background: #f8fafc;
+  padding: 0 12px;
+  color: #14211d;
+  font-size: 0.92rem;
+  outline: none;
+}
+
+.form-group select:focus {
+  border-color: #2f5249;
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(47, 82, 73, 0.1);
+}
+
+.password-field-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-field-wrapper input {
+  padding-right: 44px;
+}
+
+.password-toggle-icon {
+  position: absolute;
+  right: 6px;
+  width: 34px;
+  height: 34px;
   border: none;
-  background: none;
-  color: #2f5249;
-  font-size: 0.78rem;
-  font-weight: 800;
+  background: transparent;
+  color: #8fa99f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
   cursor: pointer;
-  padding: 0;
+}
+
+.password-toggle-icon:hover {
+  color: #2f5249;
+  background: rgba(47, 82, 73, 0.1);
+}
+
+.password-toggle-icon svg {
+  width: 19px;
+  height: 19px;
+  fill: currentColor;
 }
 
 .permissions-list {
@@ -277,8 +367,8 @@
 }
 
 .permission-options {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 9px;
 }
 

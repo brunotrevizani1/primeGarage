@@ -12,12 +12,14 @@ async function getCustomerPageSettings(req, res) {
 
     const [businesses] = await db.query(
       `
-  SELECT 
+  SELECT
     id,
     name,
     customer_page_name,
     customer_page_phrase,
     customer_page_logo_url,
+    customer_page_whatsapp,
+    customer_page_instagram,
     address_street,
     address_number,
     address_neighborhood,
@@ -45,6 +47,8 @@ async function getCustomerPageSettings(req, res) {
           business.customer_page_phrase ||
           "Agende sua lavagem de forma rápida e prática.",
         customerPageLogoUrl: business.customer_page_logo_url || "",
+        customerPageWhatsapp: business.customer_page_whatsapp || "",
+        customerPageInstagram: business.customer_page_instagram || "",
 
         addressStreet: business.address_street || "",
         addressNumber: business.address_number || "",
@@ -69,6 +73,8 @@ async function updateCustomerPageSettings(req, res) {
       customerPageName,
       customerPagePhrase,
       customerPageLogoUrl,
+      customerPageWhatsapp,
+      customerPageInstagram,
       addressStreet,
       addressNumber,
       addressNeighborhood,
@@ -88,6 +94,18 @@ async function updateCustomerPageSettings(req, res) {
       });
     }
 
+    const whatsappDigits = customerPageWhatsapp
+      ? customerPageWhatsapp.replace(/\D/g, "")
+      : "";
+
+    const instagramUsername = customerPageInstagram
+      ? customerPageInstagram
+          .trim()
+          .replace(/^https?:\/\/(www\.)?instagram\.com\//i, "")
+          .replace(/^@/, "")
+          .replace(/\/.*$/, "")
+      : "";
+
     await db.query(
       `
   UPDATE businesses
@@ -95,6 +113,8 @@ async function updateCustomerPageSettings(req, res) {
     customer_page_name = ?,
     customer_page_phrase = ?,
     customer_page_logo_url = ?,
+    customer_page_whatsapp = ?,
+    customer_page_instagram = ?,
     address_street = ?,
     address_number = ?,
     address_neighborhood = ?,
@@ -106,6 +126,8 @@ async function updateCustomerPageSettings(req, res) {
         customerPageName.trim(),
         customerPagePhrase ? customerPagePhrase.trim() : null,
         customerPageLogoUrl ? customerPageLogoUrl.trim() : null,
+        whatsappDigits || null,
+        instagramUsername || null,
         addressStreet ? addressStreet.trim() : null,
         addressNumber ? addressNumber.trim() : null,
         addressNeighborhood ? addressNeighborhood.trim() : null,

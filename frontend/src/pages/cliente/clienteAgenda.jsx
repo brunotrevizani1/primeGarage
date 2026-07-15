@@ -3,9 +3,18 @@ import { apiRequest } from "../../services/api";
 import "./clienteAgenda.css";
 
 const MONTH_NAMES = [
-  "Janeiro", "Fevereiro", "Março", "Abril",
-  "Maio", "Junho", "Julho", "Agosto",
-  "Setembro", "Outubro", "Novembro", "Dezembro",
+  "Janeiro",
+  "Fevereiro",
+  "Março",
+  "Abril",
+  "Maio",
+  "Junho",
+  "Julho",
+  "Agosto",
+  "Setembro",
+  "Outubro",
+  "Novembro",
+  "Dezembro",
 ];
 
 const WEEKDAY_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
@@ -88,7 +97,8 @@ function ClienteAgenda() {
   }
 
   function prevMonth() {
-    if (viewYear === now.getFullYear() && viewMonth <= now.getMonth() + 1) return;
+    if (viewYear === now.getFullYear() && viewMonth <= now.getMonth() + 1)
+      return;
     const newMonth = viewMonth === 1 ? 12 : viewMonth - 1;
     const newYear = viewMonth === 1 ? viewYear - 1 : viewYear;
     setViewYear(newYear);
@@ -146,7 +156,9 @@ function ClienteAgenda() {
 
     const raw = sessionStorage.getItem(`primegarage_booking_${businessId}`);
     if (!raw) {
-      setError("Dados do agendamento não encontrados. Volte e tente novamente.");
+      setError(
+        "Dados do agendamento não encontrados. Volte e tente novamente.",
+      );
       return;
     }
 
@@ -170,7 +182,11 @@ function ClienteAgenda() {
 
     for (let d = 1; d <= daysInMonth; d++) {
       const dateStr = `${viewYear}-${String(viewMonth).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-      cells.push({ day: d, dateStr, status: availability[dateStr] || "unavailable" });
+      cells.push({
+        day: d,
+        dateStr,
+        status: availability[dateStr] || "unavailable",
+      });
     }
 
     return cells;
@@ -201,8 +217,7 @@ function ClienteAgenda() {
 
   const businessName =
     business?.name || business?.customerPageName || "Lava-jato";
-  const businessLogo =
-    business?.logoUrl || business?.customerPageLogoUrl;
+  const businessLogo = business?.logoUrl || business?.customerPageLogoUrl;
 
   if (loadingPage) {
     return (
@@ -220,10 +235,7 @@ function ClienteAgenda() {
   return (
     <main className="ca-page">
       {blockModal !== null && (
-        <div
-          className="ca-block-overlay"
-          onClick={() => setBlockModal(null)}
-        >
+        <div className="ca-block-overlay" onClick={() => setBlockModal(null)}>
           <section
             className="ca-block-modal"
             onClick={(e) => e.stopPropagation()}
@@ -328,7 +340,6 @@ function ClienteAgenda() {
               );
             })}
           </div>
-
         </section>
 
         {selectedDate && settings?.schedule_type === "daily" && (
@@ -368,7 +379,9 @@ function ClienteAgenda() {
                       className={[
                         "ca-time-slot",
                         !slot.available ? "ca-time-slot--full" : "",
-                        selectedSlot === slot.time ? "ca-time-slot--selected" : "",
+                        selectedSlot === slot.time
+                          ? "ca-time-slot--selected"
+                          : "",
                       ]
                         .filter(Boolean)
                         .join(" ")}
@@ -392,7 +405,12 @@ function ClienteAgenda() {
         {selectedDate && settings?.schedule_type === "periods" && (
           <section className="ca-slots-card">
             <div className="ca-slots-header">
-              <strong>Escolha o turno</strong>
+              <div>
+                <strong>Escolha o turno</strong>
+                <p className="ca-slots-subtitle">
+                  Escolha o turno que você irá deixar o veículo.
+                </p>
+              </div>
               <span>{formatDateDisplay(selectedDate)}</span>
             </div>
 

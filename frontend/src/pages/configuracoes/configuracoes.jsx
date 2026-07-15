@@ -22,6 +22,8 @@ function Configuracoes() {
     customerPageName: "",
     customerPagePhrase: "",
     customerPageLogoUrl: "",
+    customerPageWhatsapp: "",
+    customerPageInstagram: "",
 
     addressStreet: "",
     addressNumber: "",
@@ -59,6 +61,18 @@ function Configuracoes() {
   );
 
   const canViewFinance = userRole === "owner" || userRole === "super_admin";
+
+  function formatWhatsapp(value) {
+    const numbers = value.replace(/\D/g, "").slice(0, 11);
+
+    if (numbers.length <= 2) return numbers;
+    if (numbers.length <= 6) return `(${numbers.slice(0, 2)}) ${numbers.slice(2)}`;
+    if (numbers.length <= 10) {
+      return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 6)}-${numbers.slice(6)}`;
+    }
+
+    return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7)}`;
+  }
 
   function handleLogoFileChange(event) {
     const file = event.target.files?.[0];
@@ -162,6 +176,8 @@ function Configuracoes() {
         customerPageName: response.settings?.customerPageName || "",
         customerPagePhrase: response.settings?.customerPagePhrase || "",
         customerPageLogoUrl: response.settings?.customerPageLogoUrl || "",
+        customerPageWhatsapp: response.settings?.customerPageWhatsapp || "",
+        customerPageInstagram: response.settings?.customerPageInstagram || "",
 
         addressStreet: response.settings?.addressStreet || "",
         addressNumber: response.settings?.addressNumber || "",
@@ -585,6 +601,33 @@ function Configuracoes() {
                     </button>
                   )}
                 </div>
+              </div>
+
+              <div className="form-group">
+                <label>WhatsApp</label>
+                <input
+                  type="text"
+                  placeholder="(51) 99999-8888"
+                  value={form.customerPageWhatsapp}
+                  onChange={(event) =>
+                    updateField(
+                      "customerPageWhatsapp",
+                      formatWhatsapp(event.target.value),
+                    )
+                  }
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Instagram</label>
+                <input
+                  type="text"
+                  placeholder="@seulavajato"
+                  value={form.customerPageInstagram}
+                  onChange={(event) =>
+                    updateField("customerPageInstagram", event.target.value)
+                  }
+                />
               </div>
 
               <button

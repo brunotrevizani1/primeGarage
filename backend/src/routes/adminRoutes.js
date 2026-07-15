@@ -1,5 +1,9 @@
 const express = require("express");
-const { createBusinessWithOwner, listBusinesses } = require("../controllers/adminController");
+const {
+  createBusinessWithOwner,
+  listBusinesses,
+  updateBusiness,
+} = require("../controllers/adminController");
 const authMiddleware = require("../middlewares/authMiddleware");
 
 const router = express.Router();
@@ -21,6 +25,13 @@ router.post(
   authMiddleware,
   onlySuperAdmin,
   createBusinessWithOwner,
+);
+
+router.put(
+  "/businesses/:id",
+  authMiddleware,
+  onlySuperAdmin,
+  updateBusiness,
 );
 
 module.exports = router;

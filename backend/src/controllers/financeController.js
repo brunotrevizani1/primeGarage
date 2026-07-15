@@ -93,7 +93,7 @@ async function getReceivables(req, res) {
     } = req.query;
     const offset = (Number(page) - 1) * Number(limit);
 
-    // Auto-baixa: mark overdue installments (only if migration applied)
+    // Auto-baixa: mark overdue installments as paid
     try {
       const [overdueInstallments] = await db.query(
         `SELECT p.id, p.amount, pm.bank_id
@@ -120,7 +120,7 @@ async function getReceivables(req, res) {
           );
         }
       }
-    } catch { /* migration not applied yet */ }
+    } catch { /* don't block the listing if the auto-baixa sweep fails */ }
 
     const conditions = ["p.business_id = ?"];
     const params = [businessId];
@@ -161,8 +161,7 @@ async function getReceivables(req, res) {
       params.push(Number(amount_max));
     }
 
-    // Build two where clauses: one using COALESCE(due_date, created_at) for date filter,
-    // and a legacy fallback using only created_at (for before migration is applied)
+    // Fallback where clause (created_at only) used if the query below fails unexpectedly
     const legacyConditions = conditions.map((c) =>
       c.includes("COALESCE(DATE(p.due_date)") ? "DATE(p.created_at) = ?" : c,
     );
@@ -202,7 +201,7 @@ async function getReceivables(req, res) {
         [...params, Number(limit), offset],
       );
     } catch {
-      // Fallback: migration not applied, use only created_at for date filter
+      // Fallback: retry with the simpler created_at-only filter
       [[{ total }]] = await db.query(
         `SELECT COUNT(*) AS total
          FROM payments p
@@ -416,7 +415,7 @@ async function getPaymentMethods(req, res) {
       [businessId],
     );
 
-    // Enrich with installments and auto_baixa if migration has been applied
+    // Enrich with installments and auto_baixa
     if (methods.length > 0) {
       try {
         const methodIds = methods.map((m) => m.id);
@@ -427,7 +426,11 @@ async function getPaymentMethods(req, res) {
           methodIds,
         );
         const autoMap = {};
-        autoCols.forEach((row) => { autoMap[row.id] = Boolean(row.auto_baixa); });
+        autoCols.forEach((row) => {
+          autoMap[row.id] = {
+            auto_baixa: Boolean(row.auto_baixa),
+          };
+        });
 
         const [installments] = await db.query(
           `SELECT payment_method_id, installment_count, fee_percentage
@@ -447,11 +450,15 @@ async function getPaymentMethods(req, res) {
         }
 
         methods.forEach((m) => {
-          m.auto_baixa = autoMap[m.id] || false;
+          const extra = autoMap[m.id] || {};
+          m.auto_baixa = extra.auto_baixa || false;
           m.installments = installmentMap[m.id] || [];
         });
       } catch {
-        methods.forEach((m) => { m.auto_baixa = false; m.installments = []; });
+        methods.forEach((m) => {
+          m.auto_baixa = false;
+          m.installments = [];
+        });
       }
     }
 
@@ -473,12 +480,12 @@ async function createPaymentMethod(req, res) {
     let result;
     try {
       [result] = await db.query(
-        "INSERT INTO payment_methods (business_id, name, bank_id, auto_baixa) VALUES (?, ?, ?, ?) RETURNING id",
-        [businessId, name.trim(), bank_id || null, Boolean(auto_baixa)],
+        "INSERT INTO payment_methods (business_id, name, bank_id, auto_baixa) VALUES (?, ?, ?, ?)",
+        [businessId, name.trim(), bank_id || null, auto_baixa ? 1 : 0],
       );
     } catch {
       [result] = await db.query(
-        "INSERT INTO payment_methods (business_id, name, bank_id) VALUES (?, ?, ?) RETURNING id",
+        "INSERT INTO payment_methods (business_id, name, bank_id) VALUES (?, ?, ?)",
         [businessId, name.trim(), bank_id || null],
       );
     }
@@ -495,12 +502,18 @@ async function createPaymentMethod(req, res) {
             );
           }
         }
-      } catch { /* migration not applied yet */ }
+      } catch { /* don't block payment method creation if installment setup fails */ }
     }
 
     res.status(201).json({
       mensagem: "Forma de pagamento criada com sucesso.",
-      method: { id: methodId, name: name.trim(), is_active: true, bank_id: bank_id || null, auto_baixa: Boolean(auto_baixa) },
+      method: {
+        id: methodId,
+        name: name.trim(),
+        is_active: 1,
+        bank_id: bank_id || null,
+        auto_baixa: Boolean(auto_baixa),
+      },
     });
   } catch (error) {
     res.status(500).json({ mensagem: "Erro ao criar forma de pagamento.", erro: error.message });
@@ -521,12 +534,12 @@ async function updatePaymentMethod(req, res) {
     try {
       [result] = await db.query(
         "UPDATE payment_methods SET name = ?, bank_id = ?, is_active = ?, auto_baixa = ? WHERE id = ? AND business_id = ?",
-        [name.trim(), bank_id || null, Boolean(is_active), Boolean(auto_baixa), id, businessId],
+        [name.trim(), bank_id || null, is_active ? 1 : 0, auto_baixa ? 1 : 0, id, businessId],
       );
     } catch {
       [result] = await db.query(
         "UPDATE payment_methods SET name = ?, bank_id = ?, is_active = ? WHERE id = ? AND business_id = ?",
-        [name.trim(), bank_id || null, Boolean(is_active), id, businessId],
+        [name.trim(), bank_id || null, is_active ? 1 : 0, id, businessId],
       );
     }
 
@@ -534,7 +547,7 @@ async function updatePaymentMethod(req, res) {
       return res.status(404).json({ mensagem: "Forma de pagamento não encontrada." });
     }
 
-    // Replace all installments (only if migration applied)
+    // Replace all installments
     try {
       await db.query("DELETE FROM payment_method_installments WHERE payment_method_id = ?", [id]);
 
@@ -548,7 +561,7 @@ async function updatePaymentMethod(req, res) {
           }
         }
       }
-    } catch { /* migration not applied yet */ }
+    } catch { /* don't block the method update if installment sync fails */ }
 
     res.json({ mensagem: "Forma de pagamento atualizada com sucesso." });
   } catch (error) {

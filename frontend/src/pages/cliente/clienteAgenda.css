@@ -360,6 +360,13 @@
   font-weight: 800;
 }
 
+.ca-slots-subtitle {
+  color: #8ca09a;
+  font-size: 0.78rem;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
 .ca-slots-loading {
   display: flex;
   justify-content: center;

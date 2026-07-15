@@ -12,6 +12,8 @@ CREATE TABLE IF NOT EXISTS businesses (
   customer_page_name VARCHAR(150),
   customer_page_phrase VARCHAR(255),
   customer_page_logo_url TEXT,
+  customer_page_whatsapp VARCHAR(20),
+  customer_page_instagram VARCHAR(100),
   address_street VARCHAR(150),
   address_number VARCHAR(20),
   address_neighborhood VARCHAR(100),

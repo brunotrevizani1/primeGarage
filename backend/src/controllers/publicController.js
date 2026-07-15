@@ -90,6 +90,8 @@ async function getCustomerPage(req, res) {
         customer_page_name,
         customer_page_phrase,
         customer_page_logo_url,
+        customer_page_whatsapp,
+        customer_page_instagram,
         address_street,
         address_number,
         address_neighborhood,
@@ -135,6 +137,8 @@ async function getCustomerPage(req, res) {
           business.customer_page_phrase ||
           "Agende sua lavagem de forma rápida e prática.",
         logoUrl: business.customer_page_logo_url || "",
+        whatsapp: business.customer_page_whatsapp || "",
+        instagram: business.customer_page_instagram || "",
 
         addressStreet: business.address_street || "",
         addressNumber: business.address_number || "",

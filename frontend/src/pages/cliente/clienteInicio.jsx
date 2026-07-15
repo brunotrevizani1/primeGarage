@@ -43,8 +43,27 @@ function ClienteInicio() {
     window.location.href = `/agendar/${businessId}/categorias`;
   }
 
-  function showComingSoonMessage(label) {
-    alert(`${label} será configurado em breve pelo lava-jato.`);
+  function openWhatsapp() {
+    const digits = business?.whatsapp || "";
+
+    if (!digits) {
+      alert("WhatsApp ainda não cadastrado pelo lava-jato.");
+      return;
+    }
+
+    const withCountryCode = digits.length <= 11 ? `55${digits}` : digits;
+    window.open(`https://wa.me/${withCountryCode}`, "_blank");
+  }
+
+  function openInstagram() {
+    const username = business?.instagram || "";
+
+    if (!username) {
+      alert("Instagram ainda não cadastrado pelo lava-jato.");
+      return;
+    }
+
+    window.open(`https://instagram.com/${username}`, "_blank");
   }
 
   function toBoolean(value) {
@@ -284,7 +303,7 @@ function ClienteInicio() {
           <button
             type="button"
             className="shortcut-button whatsapp"
-            onClick={() => showComingSoonMessage("WhatsApp")}
+            onClick={openWhatsapp}
           >
             <span className="shortcut-icon">
               <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -297,7 +316,7 @@ function ClienteInicio() {
           <button
             type="button"
             className="shortcut-button instagram"
-            onClick={() => showComingSoonMessage("Instagram")}
+            onClick={openInstagram}
           >
             <span className="shortcut-icon">
               <svg viewBox="0 0 24 24" aria-hidden="true">

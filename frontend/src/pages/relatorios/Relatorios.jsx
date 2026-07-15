@@ -764,7 +764,6 @@ function FinancialTab({
               </div>
             </div>
           </div>
-
         </div>
       )}
 
@@ -866,11 +865,15 @@ function FinancialTab({
             </div>
             <div className="rel-card">
               <div className="rel-card-label">Entradas</div>
-              <div className="rel-card-value green">{BRL.format(rec.paid_amount)}</div>
+              <div className="rel-card-value green">
+                {BRL.format(rec.paid_amount)}
+              </div>
             </div>
             <div className="rel-card">
               <div className="rel-card-label">Saídas</div>
-              <div className="rel-card-value red">{BRL.format(pay.paid_amount)}</div>
+              <div className="rel-card-value red">
+                {BRL.format(pay.paid_amount)}
+              </div>
             </div>
           </div>
         </div>
@@ -1053,7 +1056,9 @@ function CustomersTab({
         {data.customers.length > 0 ? (
           <CustomerList customers={data.customers} />
         ) : (
-          <div className="rel-empty-table">Nenhum atendimento entregue neste período</div>
+          <div className="rel-empty-table">
+            Nenhum atendimento entregue neste período
+          </div>
         )}
       </div>
     </>
@@ -1078,20 +1083,33 @@ function CustomerList({ customers }) {
             </div>
             <div className="rel-customer-stats">
               <span className="rel-customer-stat">
-                <span className="rel-customer-stat-value">{c.total_orders}</span>
+                <span className="rel-customer-stat-value">
+                  {c.total_orders}
+                </span>
                 <span className="rel-customer-stat-label">atend.</span>
               </span>
               <span className="rel-customer-stat">
-                <span className="rel-customer-stat-value">{BRL.format(c.total_spent)}</span>
+                <span className="rel-customer-stat-value">
+                  {BRL.format(c.total_spent)}
+                </span>
                 <span className="rel-customer-stat-label">gasto</span>
               </span>
               {c.services.length > 0 && (
                 <button
-                  className={expanded === i ? "rel-customer-toggle open" : "rel-customer-toggle"}
+                  className={
+                    expanded === i
+                      ? "rel-customer-toggle open"
+                      : "rel-customer-toggle"
+                  }
                   onClick={() => toggle(i)}
                   aria-label="Ver serviços"
                 >
-                  <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    width="14"
+                    height="14"
+                  >
                     <path d="M7.22 9.47a.75.75 0 0 1 1.06 0L12 13.19l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0l-4.25-4.25a.75.75 0 0 1 0-1.06Z" />
                   </svg>
                 </button>
@@ -1164,7 +1182,11 @@ function TeamTab({
         <div className="rel-section-header">
           <span className="rel-section-name">Equipe</span>
           <button
-            className={hasActiveFilter ? "rel-filter-icon-btn active" : "rel-filter-icon-btn"}
+            className={
+              hasActiveFilter
+                ? "rel-filter-icon-btn active"
+                : "rel-filter-icon-btn"
+            }
             onClick={openFilter}
             aria-label="Filtrar"
           >
@@ -1173,7 +1195,9 @@ function TeamTab({
         </div>
 
         {data.team.length === 0 ? (
-          <div className="rel-empty-table">Nenhum funcionário ativo encontrado</div>
+          <div className="rel-empty-table">
+            Nenhum funcionário ativo encontrado
+          </div>
         ) : (
           <EmployeeList team={data.team} />
         )}
@@ -1204,20 +1228,33 @@ function EmployeeList({ team }) {
             </div>
             <div className="rel-customer-stats">
               <span className="rel-customer-stat">
-                <span className="rel-customer-stat-value">{emp.total_orders}</span>
-                <span className="rel-customer-stat-label">Atend</span>
+                <span className="rel-customer-stat-value">
+                  {emp.total_orders}
+                </span>
+                <span className="rel-customer-stat-label">Atend.</span>
               </span>
               <span className="rel-customer-stat">
-                <span className="rel-customer-stat-value">{BRL.format(emp.total_value)}</span>
+                <span className="rel-customer-stat-value">
+                  {BRL.format(emp.total_value)}
+                </span>
                 <span className="rel-customer-stat-label">total</span>
               </span>
               {emp.services.length > 0 && (
                 <button
-                  className={expanded === i ? "rel-customer-toggle open" : "rel-customer-toggle"}
+                  className={
+                    expanded === i
+                      ? "rel-customer-toggle open"
+                      : "rel-customer-toggle"
+                  }
                   onClick={() => toggle(i)}
                   aria-label="Ver serviços"
                 >
-                  <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    width="14"
+                    height="14"
+                  >
                     <path d="M7.22 9.47a.75.75 0 0 1 1.06 0L12 13.19l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0l-4.25-4.25a.75.75 0 0 1 0-1.06Z" />
                   </svg>
                 </button>
@@ -1227,8 +1264,12 @@ function EmployeeList({ team }) {
 
           {emp.commission_enabled && emp.commission !== null && (
             <div className="rel-employee-commission">
-              <span className="rel-employee-commission-label">Comissão estimada</span>
-              <span className="rel-employee-commission-value">{BRL.format(emp.commission)}</span>
+              <span className="rel-employee-commission-label">
+                Comissão estimada
+              </span>
+              <span className="rel-employee-commission-value">
+                {BRL.format(emp.commission)}
+              </span>
             </div>
           )}
 
