@@ -1,5 +1,29 @@
 const db = require("../database/connection");
 
+function normalizePage(value) {
+  const page = Number(value || 1);
+
+  if (Number.isNaN(page) || page < 1) {
+    return 1;
+  }
+
+  return page;
+}
+
+function normalizeLimit(value) {
+  const limit = Number(value || 20);
+
+  if (Number.isNaN(limit) || limit < 1) {
+    return 20;
+  }
+
+  if (limit > 50) {
+    return 50;
+  }
+
+  return limit;
+}
+
 async function createOrder(req, res) {
   const connection = await db.getConnection();
 
@@ -656,6 +680,10 @@ async function listOrders(req, res) {
       });
     }
 
+    const page = normalizePage(req.query.page);
+    const limit = normalizeLimit(req.query.limit);
+    const offset = (page - 1) * limit;
+
     const filters = ["so.business_id = ?"];
     const values = [businessId];
 
@@ -692,6 +720,38 @@ async function listOrders(req, res) {
       values.push(Number(categoryId));
     }
 
+    const joinClause = `
+      FROM service_orders so
+      INNER JOIN customers c ON so.customer_id = c.id
+      INNER JOIN vehicles v ON so.vehicle_id = v.id
+      INNER JOIN services s ON so.service_id = s.id
+      LEFT JOIN users u ON so.responsible_user_id = u.id
+      WHERE ${filters.join(" AND ")}
+    `;
+
+    const [[{ total }]] = await db.query(
+      `SELECT COUNT(*) AS total ${joinClause}`,
+      values,
+    );
+
+    const [statusRows] = await db.query(
+      `SELECT so.status, COUNT(*) AS count ${joinClause} GROUP BY so.status`,
+      values,
+    );
+
+    const statusCounts = {
+      agendado: 0,
+      na_fila: 0,
+      em_lavagem: 0,
+      pronto: 0,
+      entregue: 0,
+      cancelado: 0,
+    };
+
+    for (const row of statusRows) {
+      statusCounts[row.status] = Number(row.count);
+    }
+
     const [orders] = await db.query(
       `
       SELECT
@@ -709,13 +769,8 @@ async function listOrders(req, res) {
         s.name AS service_name,
         s.category_id,
         u.name AS responsible_name
-      FROM service_orders so
-      INNER JOIN customers c ON so.customer_id = c.id
-      INNER JOIN vehicles v ON so.vehicle_id = v.id
-      INNER JOIN services s ON so.service_id = s.id
-      LEFT JOIN users u ON so.responsible_user_id = u.id
-      WHERE ${filters.join(" AND ")}
-      ORDER BY 
+      ${joinClause}
+      ORDER BY
   CASE so.status
     WHEN 'agendado' THEN 1
     WHEN 'na_fila' THEN 2
@@ -726,13 +781,26 @@ async function listOrders(req, res) {
     ELSE 7
   END,
   so.entry_time ASC
+      LIMIT ? OFFSET ?
       `,
-      values,
+      [...values, limit, offset],
     );
+
+    const totalNum = Number(total);
+    const totalPages = Math.max(Math.ceil(totalNum / limit), 1);
 
     res.json({
       mensagem: "Atendimentos listados com sucesso.",
       orders,
+      statusCounts,
+      pagination: {
+        page,
+        limit,
+        total: totalNum,
+        totalPages,
+        hasPreviousPage: page > 1,
+        hasNextPage: page < totalPages,
+      },
     });
   } catch (error) {
     res.status(500).json({

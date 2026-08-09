@@ -1,9 +1,37 @@
 const db = require("../database/connection");
 
+function normalizePage(value) {
+  const page = Number(value || 1);
+
+  if (Number.isNaN(page) || page < 1) {
+    return 1;
+  }
+
+  return page;
+}
+
+function normalizeLimit(value) {
+  const limit = Number(value || 20);
+
+  if (Number.isNaN(limit) || limit < 1) {
+    return 20;
+  }
+
+  if (limit > 50) {
+    return 50;
+  }
+
+  return limit;
+}
+
 async function getPayables(req, res) {
   try {
     const businessId = req.user.business_id;
     const { date, status, description, bank_id, amount_min, amount_max } = req.query;
+
+    const page = normalizePage(req.query.page);
+    const limit = normalizeLimit(req.query.limit);
+    const offset = (page - 1) * limit;
 
     const conditions = ["p.business_id = ?"];
     const params = [businessId];
@@ -40,6 +68,13 @@ async function getPayables(req, res) {
 
     const whereClause = conditions.join(" AND ");
 
+    const [[{ total }]] = await db.query(
+      `SELECT COUNT(*) AS total
+       FROM payables p
+       WHERE ${whereClause}`,
+      params,
+    );
+
     const [rows] = await db.query(
       `SELECT
         p.id, p.description, p.amount, p.due_date, p.status,
@@ -50,11 +85,25 @@ async function getPayables(req, res) {
       WHERE ${whereClause}
       ORDER BY
         CASE WHEN p.status = 'pendente' THEN 0 ELSE 1 END ASC,
-        CASE WHEN p.status = 'pago' THEN p.paid_at ELSE p.due_date END DESC`,
-      params,
+        CASE WHEN p.status = 'pago' THEN p.paid_at ELSE p.due_date END DESC
+      LIMIT ? OFFSET ?`,
+      [...params, limit, offset],
     );
 
-    res.json({ payables: rows.map((r) => ({ ...r, amount: Number(r.amount) })) });
+    const totalNum = Number(total);
+    const totalPages = Math.max(Math.ceil(totalNum / limit), 1);
+
+    res.json({
+      payables: rows.map((r) => ({ ...r, amount: Number(r.amount) })),
+      pagination: {
+        page,
+        limit,
+        total: totalNum,
+        totalPages,
+        hasPreviousPage: page > 1,
+        hasNextPage: page < totalPages,
+      },
+    });
   } catch (error) {
     res.status(500).json({ mensagem: "Erro ao buscar contas a pagar.", erro: error.message });
   }

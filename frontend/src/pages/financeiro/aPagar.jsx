@@ -58,6 +58,16 @@ function APagar() {
   const [tempFilters, setTempFilters] = useState(EMPTY_FILTERS);
   const [filterModalOpen, setFilterModalOpen] = useState(false);
 
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 20,
+    total: 0,
+    totalPages: 1,
+    hasPreviousPage: false,
+    hasNextPage: false,
+  });
+
   const [formModal, setFormModal] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [formError, setFormError] = useState("");
@@ -121,17 +131,19 @@ function APagar() {
     const applied = { ...tempFilters };
     setFilters(applied);
     setFilterModalOpen(false);
-    loadData(applied);
+    setPage(1);
+    loadData(applied, 1);
   }
 
   function clearFilter() {
     setTempFilters(EMPTY_FILTERS);
     setFilters(EMPTY_FILTERS);
     setFilterModalOpen(false);
-    loadData(EMPTY_FILTERS);
+    setPage(1);
+    loadData(EMPTY_FILTERS, 1);
   }
 
-  async function loadData(activeFilters = filters) {
+  async function loadData(activeFilters = filters, pageArg = page) {
     try {
       setLoading(true);
       setError("");
@@ -154,20 +166,45 @@ function APagar() {
       if (activeFilters.amount_min) params.append("amount_min", activeFilters.amount_min);
       if (activeFilters.amount_max) params.append("amount_max", activeFilters.amount_max);
       if (activeFilters.description) params.append("description", activeFilters.description);
+      params.append("page", pageArg);
+      params.append("limit", 20);
 
-      const qs = params.toString();
       const [payablesRes, banksRes] = await Promise.all([
-        apiRequest(`/api/payables${qs ? `?${qs}` : ""}`),
+        apiRequest(`/api/payables?${params.toString()}`),
         apiRequest("/api/banks"),
       ]);
 
       setPayables(payablesRes.payables || []);
       setBanks((banksRes.banks || []).filter((b) => b.is_active));
+      setPagination(
+        payablesRes.pagination || {
+          page: 1,
+          limit: 20,
+          total: 0,
+          totalPages: 1,
+          hasPreviousPage: false,
+          hasNextPage: false,
+        },
+      );
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
+  }
+
+  function previousPage() {
+    if (!pagination.hasPreviousPage) return;
+    const newPage = page - 1;
+    setPage(newPage);
+    loadData(filters, newPage);
+  }
+
+  function nextPage() {
+    if (!pagination.hasNextPage) return;
+    const newPage = page + 1;
+    setPage(newPage);
+    loadData(filters, newPage);
   }
 
   function openCreate() {
@@ -761,6 +798,32 @@ function APagar() {
                   </div>
                 </article>
               ))}
+            </div>
+          )}
+
+          {pagination.totalPages > 1 && (
+            <div className="ap-pagination">
+              <button
+                type="button"
+                onClick={previousPage}
+                disabled={!pagination.hasPreviousPage}
+                aria-label="Página anterior"
+              >
+                ‹
+              </button>
+
+              <span>
+                {pagination.page} / {pagination.totalPages}
+              </span>
+
+              <button
+                type="button"
+                onClick={nextPage}
+                disabled={!pagination.hasNextPage}
+                aria-label="Próxima página"
+              >
+                ›
+              </button>
             </div>
           )}
         </section>

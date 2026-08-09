@@ -1,5 +1,29 @@
 const db = require("../database/connection");
 
+function normalizePage(value) {
+  const page = Number(value || 1);
+
+  if (Number.isNaN(page) || page < 1) {
+    return 1;
+  }
+
+  return page;
+}
+
+function normalizeLimit(value) {
+  const limit = Number(value || 20);
+
+  if (Number.isNaN(limit) || limit < 1) {
+    return 20;
+  }
+
+  if (limit > 50) {
+    return 50;
+  }
+
+  return limit;
+}
+
 async function getBanks(req, res) {
   try {
     const businessId = req.user.business_id;
@@ -99,6 +123,9 @@ async function getBankMovements(req, res) {
   try {
     const businessId = req.user.business_id;
     const { id } = req.params;
+    const page = normalizePage(req.query.page);
+    const limit = normalizeLimit(req.query.limit);
+    const offset = (page - 1) * limit;
 
     const [[bank]] = await db.query(
       "SELECT id, name FROM banks WHERE id = ? AND business_id = ?",
@@ -106,6 +133,15 @@ async function getBankMovements(req, res) {
     );
 
     if (!bank) return res.status(404).json({ mensagem: "Banco não encontrado." });
+
+    const [[{ total }]] = await db.query(
+      `SELECT COUNT(*) AS total FROM (
+         SELECT p.id FROM payments p WHERE p.bank_id = ? AND p.business_id = ? AND p.status = 'pago'
+         UNION ALL
+         SELECT py.id FROM payables py WHERE py.bank_id = ? AND py.business_id = ? AND py.status = 'pago'
+       ) movements`,
+      [id, businessId, id, businessId],
+    );
 
     const [rows] = await db.query(
       `SELECT 'entrada' AS type, CONCAT(c.name, ' — ', v.plate) AS description, p.amount, p.paid_at AS date
@@ -118,13 +154,25 @@ async function getBankMovements(req, res) {
        SELECT 'saida' AS type, py.description, py.amount, py.paid_at AS date
        FROM payables py
        WHERE py.bank_id = ? AND py.business_id = ? AND py.status = 'pago'
-       ORDER BY date DESC`,
-      [id, businessId, id, businessId],
+       ORDER BY date DESC
+       LIMIT ? OFFSET ?`,
+      [id, businessId, id, businessId, limit, offset],
     );
+
+    const totalNum = Number(total);
+    const totalPages = Math.max(Math.ceil(totalNum / limit), 1);
 
     res.json({
       bank,
       movements: rows.map((r) => ({ ...r, amount: Number(r.amount) })),
+      pagination: {
+        page,
+        limit,
+        total: totalNum,
+        totalPages,
+        hasPreviousPage: page > 1,
+        hasNextPage: page < totalPages,
+      },
     });
   } catch (error) {
     res.status(500).json({ mensagem: "Erro ao buscar movimentações.", erro: error.message });

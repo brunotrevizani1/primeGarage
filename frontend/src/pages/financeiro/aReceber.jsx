@@ -70,6 +70,16 @@ function AReceber() {
   const [tempFilters, setTempFilters] = useState(EMPTY_FILTERS);
   const [filterModalOpen, setFilterModalOpen] = useState(false);
 
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 20,
+    total: 0,
+    totalPages: 1,
+    hasPreviousPage: false,
+    hasNextPage: false,
+  });
+
   const [baixaModal, setBaixaModal] = useState(null);
   const [selectedMethod, setSelectedMethod] = useState("");
   const [selectedInstallmentCount, setSelectedInstallmentCount] = useState("");
@@ -128,6 +138,7 @@ function AReceber() {
   function changeDate(days) {
     const d = new Date(`${selectedDate}T00:00:00`);
     d.setDate(d.getDate() + days);
+    setPage(1);
     setSelectedDate(getLocalDateString(d));
   }
 
@@ -138,6 +149,7 @@ function AReceber() {
 
   function confirmDate() {
     if (!temporaryDate) return;
+    setPage(1);
     setSelectedDate(temporaryDate);
     setDateModalOpen(false);
   }
@@ -156,17 +168,19 @@ function AReceber() {
     const applied = { ...tempFilters };
     setFilters(applied);
     setFilterModalOpen(false);
-    loadWithParams(selectedDate, applied);
+    setPage(1);
+    loadWithParams(selectedDate, applied, 1);
   }
 
   function clearFilter() {
     setTempFilters(EMPTY_FILTERS);
     setFilters(EMPTY_FILTERS);
     setFilterModalOpen(false);
-    loadWithParams(selectedDate, EMPTY_FILTERS);
+    setPage(1);
+    loadWithParams(selectedDate, EMPTY_FILTERS, 1);
   }
 
-  async function loadWithParams(date, activeFilters) {
+  async function loadWithParams(date, activeFilters, pageArg = page) {
     try {
       setLoading(true);
       setError("");
@@ -198,6 +212,8 @@ function AReceber() {
         params.append("amount_min", activeFilters.amount_min);
       if (activeFilters.amount_max)
         params.append("amount_max", activeFilters.amount_max);
+      params.append("page", pageArg);
+      params.append("limit", 20);
 
       const [receivablesRes, methodsRes] = await Promise.all([
         apiRequest(`/api/finance/receivables?${params.toString()}`),
@@ -206,11 +222,35 @@ function AReceber() {
 
       setReceivables(receivablesRes.receivables || []);
       setPaymentMethods((methodsRes.methods || []).filter((m) => m.is_active));
+      setPagination(
+        receivablesRes.pagination || {
+          page: 1,
+          limit: 20,
+          total: 0,
+          totalPages: 1,
+          hasPreviousPage: false,
+          hasNextPage: false,
+        },
+      );
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
+  }
+
+  function previousPage() {
+    if (!pagination.hasPreviousPage) return;
+    const newPage = page - 1;
+    setPage(newPage);
+    loadWithParams(selectedDate, filters, newPage);
+  }
+
+  function nextPage() {
+    if (!pagination.hasNextPage) return;
+    const newPage = page + 1;
+    setPage(newPage);
+    loadWithParams(selectedDate, filters, newPage);
   }
 
   function openBaixa(record) {
@@ -283,6 +323,7 @@ function AReceber() {
 
   useEffect(() => {
     loadWithParams(selectedDate, filters);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate]);
 
   if (loading) {
@@ -1047,6 +1088,32 @@ function AReceber() {
                   </div>
                 </article>
               ))}
+            </div>
+          )}
+
+          {pagination.totalPages > 1 && (
+            <div className="ar-pagination">
+              <button
+                type="button"
+                onClick={previousPage}
+                disabled={!pagination.hasPreviousPage}
+                aria-label="Página anterior"
+              >
+                ‹
+              </button>
+
+              <span>
+                {pagination.page} / {pagination.totalPages}
+              </span>
+
+              <button
+                type="button"
+                onClick={nextPage}
+                disabled={!pagination.hasNextPage}
+                aria-label="Próxima página"
+              >
+                ›
+              </button>
             </div>
           )}
         </section>

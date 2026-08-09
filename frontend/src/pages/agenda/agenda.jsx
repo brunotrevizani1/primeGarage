@@ -1155,25 +1155,24 @@ function Agenda() {
               <button
                 type="button"
                 className={
-                  selectedScheduleType === "time_slots"
+                  selectedScheduleType === "daily"
                     ? "schedule-type-card active"
                     : "schedule-type-card"
                 }
-                onClick={() => openScheduleModal("time_slots")}
+                onClick={() => openScheduleModal("daily")}
               >
                 <div className="schedule-type-top">
                   <div>
-                    <strong>Agenda por horário</strong>
+                    <strong>Agenda por dia</strong>
                     <p>
-                      O cliente escolhe um horário específico. Ideal para
-                      lava-jatos que trabalham com horários marcados.
+                      O cliente escolhe apenas o dia. Ideal para controlar o
+                      limite diário sem prometer horário específico.
                     </p>
                   </div>
                 </div>
 
                 <div className="schedule-type-example">
-                  {scheduleSettings.slot_interval_minutes} min •{" "}
-                  {scheduleSettings.vehicles_per_slot} carro(s) por horário
+                  Limite de {scheduleSettings.daily_limit} carros por dia
                 </div>
               </button>
 
@@ -1204,24 +1203,25 @@ function Agenda() {
               <button
                 type="button"
                 className={
-                  selectedScheduleType === "daily"
+                  selectedScheduleType === "time_slots"
                     ? "schedule-type-card active"
                     : "schedule-type-card"
                 }
-                onClick={() => openScheduleModal("daily")}
+                onClick={() => openScheduleModal("time_slots")}
               >
                 <div className="schedule-type-top">
                   <div>
-                    <strong>Agenda por dia</strong>
+                    <strong>Agenda por horário</strong>
                     <p>
-                      O cliente escolhe apenas o dia. Ideal para controlar o
-                      limite diário sem prometer horário específico.
+                      O cliente escolhe um horário específico. Ideal para
+                      lava-jatos que trabalham com horários marcados.
                     </p>
                   </div>
                 </div>
 
                 <div className="schedule-type-example">
-                  Limite de {scheduleSettings.daily_limit} carros por dia
+                  {scheduleSettings.slot_interval_minutes} min •{" "}
+                  {scheduleSettings.vehicles_per_slot} carro(s) por horário
                 </div>
               </button>
             </div>

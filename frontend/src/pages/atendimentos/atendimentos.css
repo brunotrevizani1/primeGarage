@@ -1105,3 +1105,43 @@
   background: #214f40;
   color: #ffffff;
 }
+
+.attendance-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  margin-top: 16px;
+}
+
+.attendance-pagination button {
+  width: 38px;
+  height: 38px;
+  border: none;
+  border-radius: 14px;
+  background: #2f5249;
+  color: #ffffff;
+  font-size: 1.35rem;
+  line-height: 1;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.attendance-pagination button:disabled {
+  background: #dbe3de;
+  color: #7b8b85;
+  cursor: not-allowed;
+}
+
+.attendance-pagination span {
+  min-width: 58px;
+  height: 34px;
+  border-radius: 999px;
+  background: #eef4ef;
+  color: #2f5249;
+  font-size: 0.78rem;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

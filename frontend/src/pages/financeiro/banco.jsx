@@ -35,6 +35,15 @@ function Banco() {
   const [movModal, setMovModal] = useState(null);
   const [movements, setMovements] = useState([]);
   const [loadingMov, setLoadingMov] = useState(false);
+  const [movPage, setMovPage] = useState(1);
+  const [movPagination, setMovPagination] = useState({
+    page: 1,
+    limit: 20,
+    total: 0,
+    totalPages: 1,
+    hasPreviousPage: false,
+    hasNextPage: false,
+  });
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [servicesMenuOpen, setServicesMenuOpen] = useState(false);
@@ -174,15 +183,52 @@ function Banco() {
   async function openMovements(bank) {
     setMovModal(bank);
     setMovements([]);
+    setMovPage(1);
     setLoadingMov(true);
     try {
-      const res = await apiRequest(`/api/banks/${bank.id}/movements`);
+      const res = await apiRequest(`/api/banks/${bank.id}/movements?page=1&limit=20`);
       setMovements(res.movements || []);
+      setMovPagination(
+        res.pagination || {
+          page: 1,
+          limit: 20,
+          total: 0,
+          totalPages: 1,
+          hasPreviousPage: false,
+          hasNextPage: false,
+        },
+      );
     } catch {
       setMovements([]);
     } finally {
       setLoadingMov(false);
     }
+  }
+
+  async function loadMovementsPage(bankId, newPage) {
+    setLoadingMov(true);
+    try {
+      const res = await apiRequest(
+        `/api/banks/${bankId}/movements?page=${newPage}&limit=20`,
+      );
+      setMovements(res.movements || []);
+      setMovPagination(res.pagination || movPagination);
+      setMovPage(newPage);
+    } catch {
+      setMovements([]);
+    } finally {
+      setLoadingMov(false);
+    }
+  }
+
+  function previousMovPage() {
+    if (!movPagination.hasPreviousPage || !movModal) return;
+    loadMovementsPage(movModal.id, movPage - 1);
+  }
+
+  function nextMovPage() {
+    if (!movPagination.hasNextPage || !movModal) return;
+    loadMovementsPage(movModal.id, movPage + 1);
   }
 
   function formatMovDate(dateStr) {
@@ -520,6 +566,32 @@ function Banco() {
                     </strong>
                   </div>
                 ))}
+              </div>
+            )}
+
+            {movPagination.totalPages > 1 && (
+              <div className="banco-mov-pagination">
+                <button
+                  type="button"
+                  onClick={previousMovPage}
+                  disabled={!movPagination.hasPreviousPage}
+                  aria-label="Página anterior"
+                >
+                  ‹
+                </button>
+
+                <span>
+                  {movPagination.page} / {movPagination.totalPages}
+                </span>
+
+                <button
+                  type="button"
+                  onClick={nextMovPage}
+                  disabled={!movPagination.hasNextPage}
+                  aria-label="Próxima página"
+                >
+                  ›
+                </button>
               </div>
             )}
           </section>

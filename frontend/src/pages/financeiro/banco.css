@@ -89,3 +89,8 @@
 .banco-mov-amount { font-size: .92rem; font-weight: 900; white-space: nowrap; }
 .banco-mov-amount--entrada { color: #16a34a; }
 .banco-mov-amount--saida { color: #dc2626; }
+
+.banco-mov-pagination { display: flex; align-items: center; justify-content: center; gap: 9px; margin-top: 14px; }
+.banco-mov-pagination button { width: 34px; height: 34px; border: none; border-radius: 12px; background: #2f5249; color: #ffffff; font-size: 1.2rem; line-height: 1; font-weight: 900; cursor: pointer; }
+.banco-mov-pagination button:disabled { background: #dbe3de; color: #7b8b85; cursor: not-allowed; }
+.banco-mov-pagination span { min-width: 54px; height: 32px; border-radius: 999px; background: #eef4ef; color: #2f5249; font-size: .76rem; font-weight: 900; display: flex; align-items: center; justify-content: center; }

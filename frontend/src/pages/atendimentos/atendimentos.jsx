@@ -66,6 +66,24 @@ function Atendimentos() {
   const [categories, setCategories] = useState([]);
   const [services, setServices] = useState([]);
 
+  const [page, setPage] = useState(1);
+  const [statusCounts, setStatusCounts] = useState({
+    agendado: 0,
+    na_fila: 0,
+    em_lavagem: 0,
+    pronto: 0,
+    entregue: 0,
+    cancelado: 0,
+  });
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 20,
+    total: 0,
+    totalPages: 1,
+    hasPreviousPage: false,
+    hasNextPage: false,
+  });
+
   const filteredServices = filters.categoryId
     ? services.filter(
         (service) => String(service.category_id) === String(filters.categoryId),
@@ -111,6 +129,7 @@ function Atendimentos() {
     const currentDate = new Date(`${selectedDate}T00:00:00`);
     currentDate.setDate(currentDate.getDate() + days);
 
+    setPage(1);
     setSelectedDate(getLocalDateString(currentDate));
   }
 
@@ -124,6 +143,7 @@ function Atendimentos() {
       return;
     }
 
+    setPage(1);
     setSelectedDate(temporaryDate);
     setDateModalOpen(false);
   }
@@ -181,7 +201,7 @@ function Atendimentos() {
     }));
   }
 
-  function buildFilterQuery() {
+  function buildFilterQuery(pageArg = page) {
     const params = new URLSearchParams();
 
     params.append("date", selectedDate);
@@ -206,6 +226,9 @@ function Atendimentos() {
       params.append("serviceId", filters.serviceId);
     }
 
+    params.append("page", pageArg);
+    params.append("limit", pagination.limit);
+
     return `/api/orders?${params.toString()}`;
   }
 
@@ -227,10 +250,13 @@ function Atendimentos() {
     try {
       setLoading(true);
       setError("");
+      setPage(1);
 
-      const response = await apiRequest(buildFilterQuery());
+      const response = await apiRequest(buildFilterQuery(1));
 
       setOrders(response.orders || []);
+      setStatusCounts(response.statusCounts || statusCounts);
+      setPagination(response.pagination || pagination);
       setFilterOpen(false);
     } catch (error) {
       setError(error.message);
@@ -247,20 +273,45 @@ function Atendimentos() {
       categoryId: "",
       serviceId: "",
     });
+    setPage(1);
 
     try {
       setLoading(true);
       setError("");
 
-      const response = await apiRequest(`/api/orders?date=${selectedDate}`);
+      const response = await apiRequest(
+        `/api/orders?date=${selectedDate}&page=1&limit=${pagination.limit}`,
+      );
 
       setOrders(response.orders || []);
+      setStatusCounts(response.statusCounts || statusCounts);
+      setPagination(response.pagination || pagination);
       setFilterOpen(false);
     } catch (error) {
       setError(error.message);
     } finally {
       setLoading(false);
     }
+  }
+
+  function previousPage() {
+    if (!pagination.hasPreviousPage) {
+      return;
+    }
+
+    const newPage = page - 1;
+    setPage(newPage);
+    loadOrders(true, newPage);
+  }
+
+  function nextPage() {
+    if (!pagination.hasNextPage) {
+      return;
+    }
+
+    const newPage = page + 1;
+    setPage(newPage);
+    loadOrders(true, newPage);
   }
 
   function formatMoney(value) {
@@ -283,10 +334,6 @@ function Atendimentos() {
     return statusMap[status] || status;
   }
 
-  function getOrdersByStatus(status) {
-    return orders.filter((order) => order.status === status).length;
-  }
-
   async function handleLogout() {
     try {
       await apiRequest("/api/auth/logout", {
@@ -297,14 +344,16 @@ function Atendimentos() {
     }
   }
 
-  async function loadOrders(showLoading = true) {
+  async function loadOrders(showLoading = true, pageArg = page) {
     try {
       if (showLoading) setLoading(true);
       setError("");
 
-      const response = await apiRequest(buildFilterQuery());
+      const response = await apiRequest(buildFilterQuery(pageArg));
 
       setOrders(response.orders || []);
+      setStatusCounts(response.statusCounts || statusCounts);
+      setPagination(response.pagination || pagination);
     } catch (error) {
       setError(error.message);
     } finally {
@@ -956,32 +1005,32 @@ function Atendimentos() {
         <section className="status-summary">
           <article className="summary-box status-agendado">
             <span>Agendados</span>
-            <strong>{getOrdersByStatus("agendado")}</strong>
+            <strong>{statusCounts.agendado}</strong>
           </article>
 
           <article className="summary-box status-fila">
             <span>Na fila</span>
-            <strong>{getOrdersByStatus("na_fila")}</strong>
+            <strong>{statusCounts.na_fila}</strong>
           </article>
 
           <article className="summary-box status-lavando">
             <span>Lavando</span>
-            <strong>{getOrdersByStatus("em_lavagem")}</strong>
+            <strong>{statusCounts.em_lavagem}</strong>
           </article>
 
           <article className="summary-box status-pronto">
             <span>Prontos</span>
-            <strong>{getOrdersByStatus("pronto")}</strong>
+            <strong>{statusCounts.pronto}</strong>
           </article>
 
           <article className="summary-box status-entregue">
             <span>Entregues</span>
-            <strong>{getOrdersByStatus("entregue")}</strong>
+            <strong>{statusCounts.entregue}</strong>
           </article>
 
           <article className="summary-box status-cancelado">
             <span>Cancelados</span>
-            <strong>{getOrdersByStatus("cancelado")}</strong>
+            <strong>{statusCounts.cancelado}</strong>
           </article>
         </section>
 
@@ -1008,7 +1057,7 @@ function Atendimentos() {
               </div>
             </div>
 
-            <span>{orders.length} veículos</span>
+            <span>{pagination.total} veículos</span>
           </div>
 
           {orders.length === 0 ? (
@@ -1203,6 +1252,32 @@ function Atendimentos() {
                   </div>
                 </article>
               ))}
+            </div>
+          )}
+
+          {pagination.totalPages > 1 && (
+            <div className="attendance-pagination">
+              <button
+                type="button"
+                onClick={previousPage}
+                disabled={!pagination.hasPreviousPage}
+                aria-label="Página anterior"
+              >
+                ‹
+              </button>
+
+              <span>
+                {pagination.page} / {pagination.totalPages}
+              </span>
+
+              <button
+                type="button"
+                onClick={nextPage}
+                disabled={!pagination.hasNextPage}
+                aria-label="Próxima página"
+              >
+                ›
+              </button>
             </div>
           )}
         </section>
